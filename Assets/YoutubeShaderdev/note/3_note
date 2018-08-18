@@ -1,0 +1,17 @@
+1. Shaderlab
+    Material Inspector
+    Blend
+    Passes
+    fallback
+
+2. Cg language
+    -Surface Shader  auto code generation approach
+    -Vertex/Pixel Shader full control all code
+
+Shader Component:
+    Properties          will show in unity gui
+    SubShader           support hardware feature
+        Pass            each pass will call once to draw
+            Vertex
+            Fragment(Pixel)
+    Fallback 

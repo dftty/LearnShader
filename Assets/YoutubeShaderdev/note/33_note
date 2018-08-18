@@ -1,0 +1,18 @@
+Trun block of code on/off
+Cg- inclucde file(.cginc)
+
+
+Steps to create Custom UI drawers
+
+    1.Define type of option in GUI:
+        keyword Enum:   [KeywordEnum ( , ,  , , )]
+        Enum (On, 1, Off)
+        Toggle : 
+
+    2. #pragma multi_compile shader_feature
+
+    3. # if option
+       # else 
+       # endif
+
+Multi-variant Shaders : shaders with multiple program variants

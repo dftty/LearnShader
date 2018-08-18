@@ -1,0 +1,12 @@
+OutLine shader:
+    1. Create Scale matrix
+    2. multiply scale matrix width object space vertex info
+    3. multiply resultant matrix with MVP
+
+
+    How to Scale mesh inside shader?
+     Scale Matrix:
+        x 0 0 0
+        0 y 0 0 
+        0 0 z 0 
+        0 0 0 1

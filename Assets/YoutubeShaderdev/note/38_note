@@ -1,0 +1,3 @@
+Diffuse Lighting/Reflection:
+    Lambert lambert consin law
+    max(0, (N, L))

@@ -1,0 +1,11 @@
+Rendering Order/Draw Order/Order of Rendering
+
+Render Queue: 0 to 5000 
+    Background
+    Geometry(Default)
+    AlphaTest
+    Transparent
+
+
+Sorting : Depth-sorting/Z-sorting
+

@@ -1,0 +1,12 @@
+Normal Compression:
+    DXT compression:
+        1. 4 * 4 blocks
+        2. 2 most importmant color channels
+
+
+Normal x y z 
+       R G B 
+       需要RGB来存储法线向量，但是根据x和y是可以计算出z值
+       因此可以只使用R 和G 存储。
+       为了进一步减少，将R channel的值转移到alpha中
+       Unity已经做完了上面的步骤，因此我们只需要读取其中的值就行了。

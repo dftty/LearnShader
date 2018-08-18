@@ -1,0 +1,7 @@
+Normal Map Shader
+    TBN_world 
+    TBN_object
+
+    binormal = cross(tangent, normal);
+
+    we use TBN_world because it will need less calculation in fragment shader

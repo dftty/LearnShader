@@ -1,0 +1,14 @@
+Tags
+    SubShader Tag
+    Pass Tag
+
+
+    Queue "
+        "Queue" = "Transparent" = 3000
+                = "Transparent + 1" = 3001
+
+    Ignore Projector:  表示不受Projector组件影响
+        "IgnoreProjector" = "True"
+                          = "False"
+    RenderType:
+

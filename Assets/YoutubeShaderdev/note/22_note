@@ -1,0 +1,6 @@
+Zwrite   On/Off  when Off Z-buffer not overwritten
+    On for Opaque
+    Off for transluscent, transparent
+    Default On
+Cull   Front/Back/Off   Default Back
+Ztest  

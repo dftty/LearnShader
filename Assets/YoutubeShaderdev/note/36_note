@@ -1,0 +1,12 @@
+Light-Object interaction:
+    Lighting model
+        Basic Lighting Model
+
+Rendering Path:
+    Forward Rendering
+        Base Path
+        Additional Path
+    Legacy Deferred   Geometry buffer
+    Deffered Shading
+        
+    Legacy Vertex lit

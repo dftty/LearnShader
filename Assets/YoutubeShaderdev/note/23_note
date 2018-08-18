@@ -1,0 +1,9 @@
+Normal Mapping:
+
+
+Types of Normal maps:
+    1. world space normal map
+    2. object space normal map
+    3. tangent Space Normal Map:
+        coordinate space to Tangent Space.
+        TBN - matrix (Tangent Binormal Normal)

@@ -1,0 +1,12 @@
+Blending:
+    merge pixel
+
+
+KeyWord : Blend SrcFactor destFactor
+                src是当前颜色值 dstColor是colorbuffer中的值
+
+          BlendOp : default + 
+                            - 
+                            max
+Merged Pixel = [srcColor * srcFactor] + [dstColor * dstFactor]
+

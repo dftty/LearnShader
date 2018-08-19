@@ -7,8 +7,8 @@ Material:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: bareBone
-  m_Shader: {fileID: 4800000, guid: 384820d2ceb1f7e4bb5ed02d2ed63934, type: 3}
-  m_ShaderKeywords: 
+  m_Shader: {fileID: 4800000, guid: 0f810e2b856e3f444bf0b04e1af35b0c, type: 3}
+  m_ShaderKeywords: _LIGHTING_FRAG _USENORMAL_OFF
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -22,6 +22,13 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    m_Floats: []
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _Diffuse: 1
+    - _Lighting: 2
+    - _UseNormal: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

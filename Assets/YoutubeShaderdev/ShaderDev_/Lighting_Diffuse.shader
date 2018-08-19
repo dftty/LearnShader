@@ -82,11 +82,11 @@ Shader "ShaderDev/0013Lighting_Diffuse"{
 				o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
 				
 				// 法线世界坐标
-				o.normalWorld = normalize(mul(v.normal, unity_WorldToObject));
+				o.normalWorld = float4(normalize(mul(normalize(v.normal.xyz), (float3x3)unity_WorldToObject)), v.normal.w);
 				#if _USENORMAL_ON
 					o.normalTexcoord.xy = (v.texcoord.xy * _NormalMap_ST.xy + _NormalMap_ST.zw);
 					// 切线世界坐标
-					o.tangentWorld = normalize(mul(v.tangent, unity_ObjectToWorld));
+					o.tangentWorld = float4(normalize(mul(float3x3(unity_ObjectToWorld), v.tangent.xyz)), v.tangent.w);
 					o.binormalWorld = normalize(cross(o.normalWorld, o.tangentWorld) * v.tangent.w);
 				#endif
 				#if _LIGHTING_VERT
@@ -94,7 +94,7 @@ Shader "ShaderDev/0013Lighting_Diffuse"{
 					float3 lightColor = _LightColor0.xyz;
 					float attenuation = 1;
 
-					o.surfaceColor = float4(DiffuseLambert(o.normalWorld, lightDir, lightColor, _Diffuse, attenuation, 1), 1);
+					o.surfaceColor = float4(DiffuseLambert(o.normalWorld, lightDir, lightColor, _Diffuse, 1), 1);
 				#endif
 				return o;
 			}
@@ -104,12 +104,22 @@ Shader "ShaderDev/0013Lighting_Diffuse"{
 			half4 frag(VertexOutput i) : COLOR{
 				#if _USENORMAL_ON
 					float3 worldNormalAtPixel = WorldNormalFromNormalMap(_NormalMap, i.normalTexCoord.xy, i.tangentWorld.xyz, i.binormalWorld.xyz, i.normalWorld.xyz);
-
-					return float4(worldNormalAtPixel, 1);
 					//return tex2D(_MainTex, i.texcoord) * _Color;
 				#else
 
-					return float4(i.normalWorld.xyz, 1);
+					float3 worldNormalAtPixel = i.normalWorld.xyz;
+				#endif
+
+				#if _LIGHTING_FRAG
+					float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
+					float3 lightColor = _LightColor0.xyz;
+					float attenuation = 1;
+
+					return float4(DiffuseLambert(worldNormalAtPixel, lightDir, lightColor, _Diffuse, 1), 1);
+				#elif _LIGHTING_VERT
+					return i.surfaceColor;
+				#else
+					return float4(worldNormalAtPixel, 1);
 				#endif
 			}
 

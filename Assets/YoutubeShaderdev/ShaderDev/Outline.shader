@@ -19,7 +19,11 @@ Shader "ShaderDev/12Outline"
         // AlphaTest  : 2450     -     2400 - 2699 = AlphaTest
         // Transparent: 3000     -     2700 - 3599 = Transparent
         // Overlay    : 4000     -     3600 - 5000 = Overlay
-		Tags { "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
+		Tags { 
+			"Queue" = "Transparent" 
+			"IgnoreProjector" = "True" 
+			"RenderType" = "Transparent" 
+		}
 		
 		Pass
 		{

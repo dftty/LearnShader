@@ -14,8 +14,9 @@ Shader "ShaderDev/0012OutLine"{
 		// Tag 既可以放在SubShader 中，也可以放在Pass中，在Pass中表示仅在该pass中有效
 		Tags{
 			// 减号之间不能有空格
-			"Queue" = "Geometry-500"
-			"IgnoreProjector" = "False"
+			// 这里必须是Transparent
+			"Queue" = "Transparent"
+			"IgnoreProjector" = "True"
 		}
 		Pass{
 			// 该Pass 的名称
@@ -34,10 +35,12 @@ Shader "ShaderDev/0012OutLine"{
 
 			struct VertexInput{
 				float4 vertex : POSITION;
+				float4 texcoord : TEXCOORD0;
 			};
 
 			struct VertexOutput{
 				float4 pos : SV_POSITION;
+				float4 texcoord : TEXCOORD0;
 			};
 
 			float4 OutLine(float4 vertex, float outLine){
@@ -51,10 +54,17 @@ Shader "ShaderDev/0012OutLine"{
 			VertexOutput vert(VertexInput v){
 				VertexOutput o;
 				o.pos = UnityObjectToClipPos(OutLine(v.vertex, _OutLine));
+				o.texcoord = v.texcoord;
 				return o;
 			}
 
 			half4 frag(VertexOutput i) : COLOR{
+				if(i.texcoord.x < 0.1){
+					_OutLineColor.a = smoothstep(0, 0.1, i.texcoord.x);
+				}
+				if(i.texcoord.y < 0.1){
+					_OutLineColor.a = smoothstep(0, 0.1, i.texcoord.y);
+				}
 				return _OutLineColor;
 			}
 
@@ -89,6 +99,7 @@ Shader "ShaderDev/0012OutLine"{
 
 			VertexOutput vert(VertexInput v){
 				VertexOutput o;
+				UNITY_INITIALIZE_OUTPUT(VertexOutput, o);
 				o.pos = UnityObjectToClipPos( v.vertex);
 				o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
 				return o;

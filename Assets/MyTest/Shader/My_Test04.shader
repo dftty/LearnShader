@@ -41,6 +41,7 @@
 
 				vertOutput vert(vertInput v){
 					vertOutput o;
+					
 					o.pos = UnityObjectToClipPos(v.vertex);
 					o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
 					//o.texcoord.xy = v.texcoord.xy;

@@ -2,7 +2,7 @@
 
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
-Shader "ShaderDev/0013Lighting_Diffuse"{
+Shader "ShaderDev/0015Lighting_Ambient"{
 	Properties{
 	//  变量名   lable      data type R  G  B  A
 		_Color("Main Color", color) = (1, 1, 1, 1)
@@ -11,6 +11,11 @@ Shader "ShaderDev/0013Lighting_Diffuse"{
 		[KeywordEnum(Off, On)] _UseNormal("Use Normal Map?", float) = 0
 		_Diffuse ("_Diffuse", Range(0, 1)) = 1
 		[KeywordEnum(Off, Vert, Frag)] _Lighting ("Lighting Mode", float) = 0
+		_SpecularMap ("Specular Map", 2D) = "black" {}
+		_SpecularFactor("SpecularFactor", Range(0, 1)) = 1
+		_SpecularPower("SpecularPower", float) = 100
+		[Toggle] _Ambient ("Use Ambient?", float) = 1
+		_AmbientFactor("AmbientFactor", Range(0, 1)) = 1
 	}
 
 	SubShader{
@@ -31,11 +36,14 @@ Shader "ShaderDev/0013Lighting_Diffuse"{
 			Blend SrcAlpha OneMinusSrcAlpha
 			CGPROGRAM
 
+			#pragma target 4.0
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma shader_feature _USENORMAL_OFF _USENORMAL_ON
 			#pragma shader_feature _LIGHTING_OFF _LIGHTING_VERT _LIGHTING_FRAG
+			#pragma shader_feature _AMBIENT_OFF _AMBIENT_ON
 			#include "CVGLighting.cginc"
+			#include "UnityCG.cginc"
 
 			uniform half4 _Color;
 			uniform sampler2D _MainTex;
@@ -47,6 +55,13 @@ Shader "ShaderDev/0013Lighting_Diffuse"{
 			uniform float _Diffuse;
 			uniform float4 _LightColor0;
 
+			uniform sampler2D _SpecularMap;
+			uniform float _SpecularFactor;
+			uniform float _SpecularPower;
+
+			#if _AMBIENT_ON
+				uniform float _AmbientFactor;
+			#endif
 
 			struct VertexInput{
 				float4 vertex : POSITION;
@@ -61,41 +76,47 @@ Shader "ShaderDev/0013Lighting_Diffuse"{
 				float4 pos : SV_POSITION;
 				float4 texcoord : TEXCOORD0;
 				float4 normalWorld : TEXCOORD1;
+				float3 worldSpaceViewDir : TEXCOORD2;
 				#if _USENORMAL_ON
-					float4 tangentWorld : TEXCOORD2;
-					float3 binormalWorld : TEXCOORD3;
-					float4 normalTexcoord: TEXCOORD4;
+					float4 tangentWorld : TEXCOORD3;
+					float3 binormalWorld : TEXCOORD4;
+					float4 normalTexcoord: TEXCOORD5;
 				#endif
 				#if _LIGHTING_VERT
 					float4 surfaceColor : COLOR0;
 				#endif
 			};
-			
-			// move to CVGLighting.cginc
-			// float3 DiffuseLambert(float3 normalVal, float3 lightDir,float3 lightColor, float diffuseFactor, float attenuation){
-			// 	return lightColor * diffuseFactor * attenuation * max(0, dot(normalVal, lightDir));
-			// }
+		
 
 			VertexOutput vert(VertexInput v){
 				VertexOutput o;
 				UNITY_INITIALIZE_OUTPUT(VertexOutput, o);
-				o.pos = UnityObjectToClipPos( v.vertex);
+				o.pos = UnityObjectToClipPos(v.vertex);
 				o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
 				
+				// 计算物体到摄像机的向量
+				float3 worldSpaceViewDir = normalize(WorldSpaceViewDir(v.vertex));
+				o.worldSpaceViewDir = worldSpaceViewDir;
 				// 法线世界坐标
 				o.normalWorld = float4(normalize(mul(normalize(v.normal.xyz), (float3x3)unity_WorldToObject)), v.normal.w);
 				#if _USENORMAL_ON
 					o.normalTexcoord.xy = (v.texcoord.xy * _NormalMap_ST.xy + _NormalMap_ST.zw);
 					// 切线世界坐标
-					o.tangentWorld = float4(normalize(mul(float3x3(unity_ObjectToWorld), v.tangent.xyz)), v.tangent.w);
+					o.tangentWorld = float4(normalize(mul((float3x3)unity_ObjectToWorld, v.tangent.xyz)), v.tangent.w);
 					o.binormalWorld = normalize(cross(o.normalWorld, o.tangentWorld) * v.tangent.w);
 				#endif
 				#if _LIGHTING_VERT
 					float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
 					float3 lightColor = _LightColor0.xyz;
 					float attenuation = 1;
+					float4 specularColor = tex2Dlod(_SpecularMap, float4(v.texcoord.xy, 0, 0));
+					float3 specularCol = SpecularBlinnPhong(o.normalWorld, lightDir, worldSpaceViewDir, specularColor.rgb, _SpecularFactor, 1, _SpecularPower);
 
-					o.surfaceColor = float4(DiffuseLambert(o.normalWorld, lightDir, lightColor, _Diffuse, 1), 1);
+					o.surfaceColor = float4(DiffuseLambert(o.normalWorld, lightDir, lightColor, _Diffuse, 1) + specularCol, 1);
+					#if _AMBIENT_ON
+						float3 ambientColor = _AmbientFactor * UNITY_LIGHTMODEL_AMBIENT;
+						o.surfaceColor = float4(o.surfaceColor.rgb + ambientColor, 1);
+					#endif
 				#endif
 				return o;
 			}
@@ -116,7 +137,18 @@ Shader "ShaderDev/0013Lighting_Diffuse"{
 					float3 lightColor = _LightColor0.xyz;
 					float attenuation = 1;
 
-					return float4(DiffuseLambert(worldNormalAtPixel, lightDir, lightColor, _Diffuse, 1), 1);
+					float4 diffuseCol = float4(DiffuseLambert(worldNormalAtPixel, lightDir, lightColor, _Diffuse, 1), 1);
+					float4 specularColor = tex2D(_SpecularMap, float4(i.texcoord.xy, 0, 0));
+
+
+					float3 specularCol = SpecularBlinnPhong(worldNormalAtPixel, lightDir, i.worldSpaceViewDir, specularColor.rgb, _SpecularFactor, 1, _SpecularPower);
+
+					#if _AMBIENT_ON
+						float3 ambientColor = _AmbientFactor * UNITY_LIGHTMODEL_AMBIENT;
+						return float4(diffuseCol + specularCol + ambientColor, 1);
+					#else
+						return float4(diffuseCol + specularCol, 1);
+					#endif
 				#elif _LIGHTING_VERT
 					return i.surfaceColor;
 				#else

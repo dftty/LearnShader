@@ -70,50 +70,41 @@ Shader "ShaderDev/0014Lighting_Specular"{
 				float4 pos : SV_POSITION;
 				float4 texcoord : TEXCOORD0;
 				float4 normalWorld : TEXCOORD1;
+				float3 worldSpaceViewDir : TEXCOORD2;
 				#if _USENORMAL_ON
-					float4 tangentWorld : TEXCOORD2;
-					float3 binormalWorld : TEXCOORD3;
-					float4 normalTexcoord: TEXCOORD4;
+					float4 tangentWorld : TEXCOORD3;
+					float3 binormalWorld : TEXCOORD4;
+					float4 normalTexcoord: TEXCOORD5;
 				#endif
 				#if _LIGHTING_VERT
 					float4 surfaceColor : COLOR0;
 				#endif
 			};
-			
-			float3 DiffuseLambert(float3 normalVal, float3 lightDir,float3 lightColor, float diffuseFactor, float attenuation){
-				return lightColor * diffuseFactor * attenuation * max(0, dot(normalVal, lightDir));
-			}
-
-			float3 SpecularBlinnPhong(float3 normalDir, float3 lightDir, float3 worldSpaceViewDir, float3 specularColor,float specularFactor, float attenuation, float specularPower){
-				float3 halfwayDir = normalize(lightDir + worldSpaceViewDir);
-				return specularColor * specularFactor * attenuation * pow(max(0, dot(normalDir, halfwayDir)), specularPower);
-			}
+		
 
 			VertexOutput vert(VertexInput v){
 				VertexOutput o;
 				UNITY_INITIALIZE_OUTPUT(VertexOutput, o);
-				o.pos = UnityObjectToClipPos( v.vertex);
+				o.pos = UnityObjectToClipPos(v.vertex);
 				o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
 				
+				// 计算物体到摄像机的向量
+				float3 worldSpaceViewDir = normalize(WorldSpaceViewDir(v.vertex));
+				o.worldSpaceViewDir = worldSpaceViewDir;
 				// 法线世界坐标
 				o.normalWorld = float4(normalize(mul(normalize(v.normal.xyz), (float3x3)unity_WorldToObject)), v.normal.w);
 				#if _USENORMAL_ON
 					o.normalTexcoord.xy = (v.texcoord.xy * _NormalMap_ST.xy + _NormalMap_ST.zw);
 					// 切线世界坐标
-					o.tangentWorld = float4(normalize(mul(float3x3(unity_ObjectToWorld), v.tangent.xyz)), v.tangent.w);
+					o.tangentWorld = float4(normalize(mul((float3x3)unity_ObjectToWorld, v.tangent.xyz)), v.tangent.w);
 					o.binormalWorld = normalize(cross(o.normalWorld, o.tangentWorld) * v.tangent.w);
 				#endif
 				#if _LIGHTING_VERT
 					float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
 					float3 lightColor = _LightColor0.xyz;
 					float attenuation = 1;
-
-
-					float3 worldSpaceViewDir = normalize(WorldSpaceViewDir(v.vertex));
 					float4 specularColor = tex2Dlod(_SpecularMap, float4(v.texcoord.xy, 0, 0));
-
-					float3 specularCol = SpecularBlinnPhong(o.normalWorld, lightDir, worldSpaceViewDir, specularColor.xyz, _SpecularFactor, 1, _SpecularPower);
-			
+					float3 specularCol = SpecularBlinnPhong(o.normalWorld, lightDir, worldSpaceViewDir, specularColor.rgb, _SpecularFactor, 1, _SpecularPower);
 
 					o.surfaceColor = float4(DiffuseLambert(o.normalWorld, lightDir, lightColor, _Diffuse, 1) + specularCol, 1);
 				#endif
@@ -124,7 +115,7 @@ Shader "ShaderDev/0014Lighting_Specular"{
 
 			half4 frag(VertexOutput i) : COLOR{
 				#if _USENORMAL_ON
-					float3 worldNormalAtPixel = WorldNormalFromNormalMap(_NormalMap, i.normalTexCoord.xy, i.tangentWorld.xyz, i.binormalWorld.xyz, i.normalWorld.xyz);
+					float3 worldNormalAtPixel = WorldNormalFromNormalMap(_NormalMap, i.normalTexcoord.xy, i.tangentWorld.xyz, i.binormalWorld.xyz, i.normalWorld.xyz);
 					//return tex2D(_MainTex, i.texcoord) * _Color;
 				#else
 
@@ -136,7 +127,13 @@ Shader "ShaderDev/0014Lighting_Specular"{
 					float3 lightColor = _LightColor0.xyz;
 					float attenuation = 1;
 
-					return float4(DiffuseLambert(worldNormalAtPixel, lightDir, lightColor, _Diffuse, 1), 1);
+					float4 diffuseCol = float4(DiffuseLambert(worldNormalAtPixel, lightDir, lightColor, _Diffuse, 1), 1);
+					float4 specularColor = tex2D(_SpecularMap, float4(i.texcoord.xy, 0, 0));
+
+
+					float3 specularCol = SpecularBlinnPhong(worldNormalAtPixel, lightDir, i.worldSpaceViewDir, specularColor.rgb, _SpecularFactor, 1, _SpecularPower);
+
+					return float4(diffuseCol + specularCol, 1);
 				#elif _LIGHTING_VERT
 					return i.surfaceColor;
 				#else

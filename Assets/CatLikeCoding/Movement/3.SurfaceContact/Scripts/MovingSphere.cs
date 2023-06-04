@@ -35,9 +35,10 @@ namespace SurfaceContace
 
         Vector3 velocity = Vector3.zero;
         Vector3 desireVelocity = Vector3.zero;
-        Vector3 contactNormal;
-        float groundContactCount = 0;
+        Vector3 contactNormal, steepContactNormal;
+        float groundContactCount, steepContactCount;
         bool onGround => groundContactCount > 0;
+        bool onSteep => steepContactCount > 0;
 
         float minGroundDotProduct, minStairDotProduct;
         bool desireJump = false;
@@ -86,7 +87,7 @@ namespace SurfaceContace
 
         void Jump()
         {
-            if (onGround || (!onGround) && jumpPhase < maxAirJump)
+            if (onGround || ((!onGround) && jumpPhase < maxAirJump))
             {
                 stepSinceLastJump = 0;
                 jumpPhase += 1;
@@ -134,7 +135,7 @@ namespace SurfaceContace
             // 首先，从刚体上获取物体的当前速度
             velocity = body.velocity;
 
-            if (onGround || SnapToGround())
+            if (onGround || SnapToGround() || CheckSteepContact())
             {
                 stepSinceLastGrounded = 0;
                 jumpPhase = 0;
@@ -185,10 +186,35 @@ namespace SurfaceContace
             return false;
         }
 
+        /// <summary>
+        /// 该函数用于当场景中出现Crevasse地形时，处理玩家可能无法跳跃的情况
+        /// </summary>
+        /// <returns></returns>
+        bool CheckSteepContact()
+        {
+            // 当同时检测到多个陡坡
+            if (steepContactCount > 1)
+            {
+                steepContactNormal.Normalize();
+
+                // 如果该向量满足地面条件，那么就可以把该向量当做虚拟的当前地面向量
+                if (steepContactNormal.y > minGroundDotProduct)
+                {
+                    groundContactCount = 1;
+                    contactNormal = steepContactNormal;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         void ClearState() 
         {
             groundContactCount = 0;
             contactNormal = Vector3.zero;
+
+            steepContactCount = 0;
+            steepContactNormal = Vector3.zero;
         }
 
         void OnCollisionEnter(Collision other) 
@@ -212,6 +238,11 @@ namespace SurfaceContace
                 {
                     groundContactCount += 1;
                     contactNormal += normal;
+                }
+                else if (normal.y > -0.01f)
+                {
+                    steepContactCount += 1;
+                    steepContactNormal += normal;
                 }
             }
         }

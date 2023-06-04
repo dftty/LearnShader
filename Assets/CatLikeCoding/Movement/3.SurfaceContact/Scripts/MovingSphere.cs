@@ -41,7 +41,7 @@ namespace SurfaceContace
         bool desireJump = false;
         int jumpPhase;
         bool onGround => groundContactCount > 0;
-        int stepSinceLastGrounded;
+        int stepSinceLastGrounded, stepSinceLastJump;
 
         void Awake()
         {
@@ -86,6 +86,7 @@ namespace SurfaceContace
         {
             if (onGround || (!onGround) && jumpPhase < maxAirJump)
             {
+                stepSinceLastJump = 0;
                 jumpPhase += 1;
                 // 根据跳跃高度计算起跳速度，因为物理常量重力是负值，因此用-2f
                 float jumpSpeed = Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
@@ -127,6 +128,7 @@ namespace SurfaceContace
         void UpdateState()
         {
             stepSinceLastGrounded += 1;
+            stepSinceLastJump += 1;
             // 首先，从刚体上获取物体的当前速度
             velocity = body.velocity;
 
@@ -144,7 +146,7 @@ namespace SurfaceContace
 
         bool SnapToGround()
         {
-            if (stepSinceLastGrounded > 1)
+            if (stepSinceLastGrounded > 1 || stepSinceLastJump <= 2)
             {
                 return false;
             }

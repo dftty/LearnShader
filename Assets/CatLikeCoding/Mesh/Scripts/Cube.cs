@@ -49,7 +49,7 @@ public class Cube : MonoBehaviour {
 		yield return StartCoroutine(CreateVertices());
 		CreateTriangles();
 
-
+		mesh.RecalculateTangents();
 		yield return wait;
 	}
 
@@ -60,7 +60,7 @@ public class Cube : MonoBehaviour {
 		vertices = new Vector3[conerVertices + edgeVertices + faceVertices];
 		normals = new Vector3[vertices.Length];
 
-		WaitForSeconds wait = new WaitForSeconds(0.1f);
+		WaitForSeconds wait = new WaitForSeconds(0.01f);
 
 		int v = 0;
 		// 添加四周的点
@@ -255,6 +255,12 @@ public class Cube : MonoBehaviour {
 			Gizmos.DrawSphere(vertices[i], 0.1f);
 			Gizmos.color = Color.yellow;
 			Gizmos.DrawRay(vertices[i], normals[i]);
+
+			Gizmos.color = Color.red;
+			if (mesh.tangents.Length > 0)
+            {
+				Gizmos.DrawRay(vertices[i], mesh.tangents[i]);
+            }
 		}
 	}
 }

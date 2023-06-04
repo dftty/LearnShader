@@ -30,6 +30,7 @@ namespace SurfaceContace
         bool desireJump = false;
         int jumpPhase;
         bool onGround => groundContactCount > 0;
+        int stepSinceLastGrounded;
 
         void Awake()
         {
@@ -51,7 +52,7 @@ namespace SurfaceContace
 
             desireVelocity = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
 
-            GetComponent<Renderer>().material.SetColor("_Color", Color.white * (groundContactCount * 0.25f));
+            GetComponent<Renderer>().material.SetColor("_Color", onGround ? Color.black : Color.white);
         }
 
         void FixedUpdate() 
@@ -114,11 +115,13 @@ namespace SurfaceContace
 
         void UpdateState()
         {
+            stepSinceLastGrounded += 1;
             // 首先，从刚体上获取物体的当前速度
             velocity = body.velocity;
 
-            if (onGround)
+            if (onGround || SnapToGround())
             {
+                stepSinceLastGrounded = 0;
                 jumpPhase = 0;
                 contactNormal.Normalize();
             }
@@ -126,6 +129,39 @@ namespace SurfaceContace
             {
                 contactNormal = Vector3.up;
             }
+        }
+
+        bool SnapToGround()
+        {
+            if (stepSinceLastGrounded > 1)
+            {
+                return false;
+            }
+
+            // 没有检测到碰撞体
+            if (!Physics.Raycast(transform.position, Vector3.down, out var hit))
+            {
+                return false;
+            }
+
+            // 检测到的碰撞体不是地面
+            if (hit.normal.y < maxGroundDotProduct)
+            {
+                return false;
+            }
+
+            groundContactCount = 1;
+            contactNormal = hit.normal;
+
+            float speed = velocity.magnitude;
+            float dot = Vector3.Dot(velocity, contactNormal);
+
+            if (dot > 0)
+            {
+                velocity = (velocity - contactNormal * dot).normalized * speed;
+            }
+
+            return false;
         }
 
         void ClearState() 

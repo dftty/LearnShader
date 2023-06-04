@@ -34,12 +34,12 @@ namespace MovementPhysics
         bool onGround => groundContactCount > 0;
         int jumpPhase;
         Vector3 contactNormal;
-        float maxGroundDotProduct;
+        float minGroundDotProduct;
         float groundContactCount;
 
         void Awake() 
         {
-            maxGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
+            minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
         }
 
         // Start is called before the first frame update
@@ -165,7 +165,7 @@ namespace MovementPhysics
                 Vector3 normal = other.GetContact(i).normal;
 
                 // 判断是否认为该碰撞体是地面
-                if (normal.y > maxGroundDotProduct)
+                if (normal.y > minGroundDotProduct)
                 {
                     groundContactCount += 1;
                     contactNormal += normal;

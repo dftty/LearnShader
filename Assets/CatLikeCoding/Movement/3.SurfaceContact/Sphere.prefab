@@ -130,13 +130,14 @@ MonoBehaviour:
   maxAccerlation: 10
   maxAirAccerlation: 1
   maxGroundAngle: 25
+  maxStairAngle: 50
   maxAirJump: 1
   jumpHeight: 2
   maxSnapSpeed: 10
   probeDistance: 1
   probeMask:
     serializedVersion: 2
-    m_Bits: 49
+    m_Bits: 1073
 --- !u!96 &8647538688722074889
 TrailRenderer:
   serializedVersion: 2

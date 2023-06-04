@@ -12,7 +12,7 @@ namespace SurfaceContace
         float maxAccerlation = 10f, maxAirAccerlation = 1;
 
         [SerializeField, Range(0f, 90f)]
-        float maxGroundAngle = 25f;
+        float maxGroundAngle = 25f, maxStairAngle = 50f;
 
         [SerializeField, Range(1, 5)]
         int maxAirJump = 1;
@@ -29,24 +29,26 @@ namespace SurfaceContace
         
         // 地面射线检测层级
         [SerializeField]
-        LayerMask probeMask;
+        LayerMask probeMask, stairMask;
 
         Rigidbody body;
 
         Vector3 velocity = Vector3.zero;
         Vector3 desireVelocity = Vector3.zero;
         Vector3 contactNormal;
-        float maxGroundDotProduct;
         float groundContactCount = 0;
+        bool onGround => groundContactCount > 0;
+
+        float minGroundDotProduct, minStairDotProduct;
         bool desireJump = false;
         int jumpPhase;
-        bool onGround => groundContactCount > 0;
         int stepSinceLastGrounded, stepSinceLastJump;
 
         void Awake()
         {
             body = GetComponent<Rigidbody>();
-            maxGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
+            minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
+            minStairDotProduct = Mathf.Cos(maxStairAngle * Mathf.Deg2Rad);
         }
 
         void Update() 
@@ -165,7 +167,7 @@ namespace SurfaceContace
             }
 
             // 检测到的碰撞体不是地面
-            if (hit.normal.y < maxGroundDotProduct)
+            if (hit.normal.y < GetMinDot(hit.collider.gameObject.layer))
             {
                 return false;
             }
@@ -201,16 +203,23 @@ namespace SurfaceContace
 
         void EvaluateCollision(Collision other)
         {
+            float dot = GetMinDot(other.gameObject.layer);
             for (int i = 0; i < other.contactCount; i++)
             {
                 Vector3 normal = other.GetContact(i).normal;
 
-                if (normal.y > maxGroundDotProduct)
+                if (normal.y > dot)
                 {
                     groundContactCount += 1;
                     contactNormal += normal;
                 }
             }
+        }
+
+        // 检测到斜坡时，如果层级是楼梯，那么应该选取minStairDotProduct
+        float GetMinDot(int layer)
+        {
+            return (stairMask & (1 << layer)) == 0 ? minGroundDotProduct : minStairDotProduct;
         }
     }
 }

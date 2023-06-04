@@ -8426,6 +8426,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3307529994075282002, guid: e8d8bf23836678247b3c472acb4c1503, type: 3}
+      propertyPath: maxSnapSpeed
+      value: 4.1
+      objectReference: {fileID: 0}
     - target: {fileID: 7056776873044290313, guid: e8d8bf23836678247b3c472acb4c1503, type: 3}
       propertyPath: m_RootOrder
       value: 16

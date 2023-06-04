@@ -6,7 +6,7 @@ namespace SurfaceContace
     {
 
         [SerializeField, Range(1f, 100f)]
-        float maxSpeed = 10f;
+        float maxSpeed = 30f;
 
         [SerializeField, Range(1f, 100f)]
         float maxAccerlation = 10f, maxAirAccerlation = 1;
@@ -19,6 +19,17 @@ namespace SurfaceContace
 
         [SerializeField, Range(1f, 5f)]
         float jumpHeight = 2;
+
+        [SerializeField, Range(1f, 100f)]
+        float maxSnapSpeed = 10;
+
+        // 地面射线检测最大距离
+        [SerializeField, Range(0f, 1f)]
+        float probeDistance = 1;
+        
+        // 地面射线检测层级
+        [SerializeField]
+        LayerMask probeMask;
 
         Rigidbody body;
 
@@ -138,8 +149,15 @@ namespace SurfaceContace
                 return false;
             }
 
+            // 当速度大于最大贴地速度时，物体应该表现和现实一样，飞起来
+            float speed = velocity.magnitude;
+            if (speed > maxSnapSpeed)
+            {
+                return false;
+            }
+
             // 没有检测到碰撞体
-            if (!Physics.Raycast(transform.position, Vector3.down, out var hit))
+            if (!Physics.Raycast(transform.position, Vector3.down, out var hit, probeDistance, probeMask))
             {
                 return false;
             }
@@ -153,7 +171,6 @@ namespace SurfaceContace
             groundContactCount = 1;
             contactNormal = hit.normal;
 
-            float speed = velocity.magnitude;
             float dot = Vector3.Dot(velocity, contactNormal);
 
             if (dot > 0)

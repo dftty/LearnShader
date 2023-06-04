@@ -14,7 +14,7 @@ namespace SurfaceContace
         [SerializeField, Range(0f, 90f)]
         float maxGroundAngle = 25f, maxStairAngle = 50f;
 
-        [SerializeField, Range(1, 5)]
+        [SerializeField, Range(0, 5)]
         int maxAirJump = 1;
 
         [SerializeField, Range(1f, 5f)]
@@ -87,22 +87,47 @@ namespace SurfaceContace
 
         void Jump()
         {
-            if (onGround || ((!onGround) && jumpPhase < maxAirJump))
+            Vector3 jumpDirection;
+
+            if (onGround)
             {
-                stepSinceLastJump = 0;
-                jumpPhase += 1;
-                // 根据跳跃高度计算起跳速度，因为物理常量重力是负值，因此用-2f
-                float jumpSpeed = Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
-                float alignSpeed = Vector3.Dot(velocity, contactNormal);
-
-                // 为了防止多次连跳跳跃速度越来越大，每次跳跃时计算是否需要用起跳速度减去当前物体的上升速度
-                if (alignSpeed > 0)
-                {
-                    jumpSpeed = Mathf.Max(jumpSpeed - alignSpeed, 0);
-                }
-
-                velocity += contactNormal * jumpSpeed;
+                jumpDirection = contactNormal;
             }
+            else if (onSteep)
+            {
+                jumpDirection = steepContactNormal;
+                // 墙跳也应该重置跳跃次数
+                jumpPhase = 0;
+            }
+            else if (maxAirJump > 0 && jumpPhase <= maxAirJump)
+            {
+                // 这个判断是为了防止当空中跳跃次数大于0时，没有跳跃但是从平面掉落时，可以多跳一次的bug
+                if (jumpPhase == 0)
+                {
+                    jumpPhase = 1;
+                }
+                jumpDirection = contactNormal;
+            }
+            else 
+            {
+                return ;
+            }
+
+            jumpDirection = (jumpDirection + Vector3.up).normalized;
+
+            stepSinceLastJump = 0;
+            jumpPhase += 1;
+            // 根据跳跃高度计算起跳速度，因为物理常量重力是负值，因此用-2f
+            float jumpSpeed = Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
+            float alignSpeed = Vector3.Dot(velocity, jumpDirection);
+
+            // 为了防止多次连跳跳跃速度越来越大，每次跳跃时计算是否需要用起跳速度减去当前物体的上升速度
+            if (alignSpeed > 0)
+            {
+                jumpSpeed = Mathf.Max(jumpSpeed - alignSpeed, 0);
+            }
+
+            velocity += jumpDirection * jumpSpeed;
         }
 
         void AdjustVelocity()
@@ -138,7 +163,11 @@ namespace SurfaceContace
             if (onGround || SnapToGround() || CheckSteepContact())
             {
                 stepSinceLastGrounded = 0;
-                jumpPhase = 0;
+                // 因为在空中第一帧我们用SnapToGround判定为还在地面，所以这里需要判断跳跃step
+                if (stepSinceLastJump > 1)
+                {
+                    jumpPhase = 0;
+                }
                 contactNormal.Normalize();
             }
             else 
@@ -250,7 +279,7 @@ namespace SurfaceContace
         // 检测到斜坡时，如果层级是楼梯，那么应该选取minStairDotProduct
         float GetMinDot(int layer)
         {
-            return (stairMask & (1 << layer)) == 0 ? minGroundDotProduct : minStairDotProduct;
+            return ((stairMask & (1 << layer)) == 0) ? minGroundDotProduct : minStairDotProduct;
         }
     }
 }

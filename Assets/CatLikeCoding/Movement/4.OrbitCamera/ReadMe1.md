@@ -1,0 +1,23 @@
+# 重写遇到的bug
+
+## 跳跃函数在一次按下后执行了两次
+原因：在打开prefab将脚本拖到物体上之后，没有注意到因为unity的bug导致脚本被加了两个
+
+## ClearState中状态赋值错误
+contactNormal为物体地面法线向量，因此在ClearState函数中应该将其修改为Vector3.zero，这样在FixedUpdate函数执行之后，执行的OnCollisionXXX函数就可以正确计算出地面法线了，
+注意，这样计算好的地面法线是所有接触面为地面的法线叠加和。因此在下一帧进入FixedUpdate之后，需要在UpdateState中进行判断，如果在地面上，那么contactNormal需要归一化
+
+## SnapToGround
+该函数具体实现请看3.SurfaceContact中的Readme1。因为进入了该函数，表示上一帧OnCollisionXXX计算中地面接触数量和法线分别是0，和zero，那么这里如果检测到了地面，就需要将结束数量和法线设置为1和碰撞体法线
+
+然后计算物体当前速度投影到地面法线后，如果该值大于0时，才表示有跳起的趋势，这种情况下才需要重新计算速度
+
+添加了stepSinceLastJump参数后，在判断是否需要贴地时，需要判断stepSinceLastJump是否小于等于2
+
+
+## 计算速度错误
+计算出移动方向在当前法线对应平面的投影后，没有把当前物体速度投影到计算出来的移动方向上
+```csharp
+float currentX = Vector3.Dot(velocity, xAxis);
+float currentZ = Vector3.Dot(velocity, zAxis);
+```

@@ -34,17 +34,30 @@ namespace OribitCamera
         Vector2 orbitAngles = new Vector2(45f, 0);
         Vector3 focusPoint, previousFocusPoint;
         float lastManualRotationTime;
+        Camera regularCamera;
+
+        Vector3 CameraHalfExtends 
+        {
+            get
+            {
+                Vector3 halfExtends;
+                halfExtends.y = regularCamera.nearClipPlane * Mathf.Tan(0.5f * regularCamera.fieldOfView * Mathf.Deg2Rad);
+                halfExtends.x = halfExtends.y * regularCamera.aspect;
+                halfExtends.z = 0;
+                return halfExtends;
+            }
+        }
 
         // Start is called before the first frame update
         void Start()
         {
+            regularCamera = GetComponent<Camera>();
             focusPoint = focus.position;
             transform.rotation = Quaternion.Euler(orbitAngles);
         }
 
         void Update() 
         {
-            
         }
 
         // Update is called once per frame
@@ -55,7 +68,6 @@ namespace OribitCamera
             if (ManualRotation() || AutomaticRotation())
             {
                 ConstrainAngles();
-                // Debug.Log(orbitAngles);
                 lookRotation = Quaternion.Euler(orbitAngles);
             }
             else 
@@ -64,6 +76,13 @@ namespace OribitCamera
             }
             Vector3 lookDirection = transform.forward;
             Vector3 lookPosition = focusPoint - lookDirection * distance;
+
+            // 计算相机的碰撞
+            if (Physics.BoxCast(focusPoint, CameraHalfExtends, lookDirection, out var hit, lookRotation, distance - regularCamera.nearClipPlane))
+            {
+                Debug.Log(hit.distance);
+                lookPosition = focusPoint - lookDirection * (hit.distance + regularCamera.nearClipPlane);
+            }
 
             transform.SetPositionAndRotation(lookPosition, lookRotation);
         }
@@ -104,8 +123,8 @@ namespace OribitCamera
         bool ManualRotation()
         {
             Vector2 input = new Vector2(
-                Input.GetAxis("Mouse Y"),
-                Input.GetAxis("Mouse X")
+                Input.GetAxis("Vertical Camera"),
+			    Input.GetAxis("Horizontal Camera")
             );
 
             const float e = 0.001f;

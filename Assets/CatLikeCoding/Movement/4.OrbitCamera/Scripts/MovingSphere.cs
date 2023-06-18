@@ -23,6 +23,9 @@ namespace OribitCamera
         // 地面射线检测层级
         [SerializeField]
         LayerMask probeMask, stairMask;
+
+        [SerializeField]
+        Transform playerInputSpace;
         
         Vector3 desireSpeed;
         Vector3 velocity;
@@ -67,7 +70,22 @@ namespace OribitCamera
             desireJump |= Input.GetButtonDown("Jump");
 
             playerInput = Vector2.ClampMagnitude(playerInput, 1);
-            desireSpeed = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
+
+            if (playerInputSpace)
+            {
+                Vector3 forward = playerInputSpace.forward;
+                forward.y = 0;
+                forward.Normalize();
+                Vector3 right = playerInputSpace.right;
+                right.y = 0;
+                right.Normalize();
+
+                desireSpeed = (forward * playerInput.y + right * playerInput.x) * maxSpeed;
+            }
+            else 
+            {
+                desireSpeed = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
+            }
         }
 
         void FixedUpdate() 

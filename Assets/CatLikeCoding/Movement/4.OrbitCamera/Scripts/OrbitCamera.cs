@@ -60,6 +60,9 @@ namespace OribitCamera
         {
         }
 
+        Vector3 lookDirection;
+        Vector3 lookPosition;
+
         // Update is called once per frame
         void LateUpdate()
         {
@@ -74,14 +77,26 @@ namespace OribitCamera
             {
                 lookRotation = transform.localRotation;
             }
-            Vector3 lookDirection = transform.forward;
-            Vector3 lookPosition = focusPoint - lookDirection * distance;
+            // 这里表示将forward旋转到lookRotation表示的角度上
+            lookDirection = lookRotation * Vector3.forward;
+            lookPosition = focusPoint - lookDirection * distance;
 
-            // 计算相机的碰撞
-            if (Physics.BoxCast(focusPoint, CameraHalfExtends, lookDirection, out var hit, lookRotation, distance - regularCamera.nearClipPlane))
+            // 相机看向物体的向量乘以相机近平面长度
+            Vector3 rectOffset = lookDirection * regularCamera.nearClipPlane;
+            // 该向量是相机近平面中心点
+            Vector3 rectPosition = lookPosition + rectOffset;
+            // BoxCast起点设置为物体位置
+            Vector3 castFrom = focus.position;
+            // BoxCast应该走过的向量
+            Vector3 castLine = rectPosition - castFrom;
+            // BoxCast长度和方向
+            float castDistance = castLine.magnitude;
+            Vector3 castDirection = castLine / castDistance;
+            if (Physics.BoxCast(castFrom, CameraHalfExtends, castDirection, out var hit, lookRotation, castDistance))
             {
-                Debug.Log(hit.distance);
-                lookPosition = focusPoint - lookDirection * (hit.distance + regularCamera.nearClipPlane);
+                // 计算碰撞后的相机近平面位置
+                rectPosition = castFrom + castDirection * hit.distance;
+                lookPosition = rectPosition - rectOffset;
             }
 
             transform.SetPositionAndRotation(lookPosition, lookRotation);

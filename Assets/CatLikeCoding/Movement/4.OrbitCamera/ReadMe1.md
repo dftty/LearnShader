@@ -33,3 +33,17 @@ Debug.Log(a.ToString());            //在Unity中会输出 (1.0, 0.3)  这里看
 Debug.Log(a.x);                     //在Unity中会输出 0.9578263
 Debug.Log(a.y);                     //在Unity中会输出 0.2873479
 ```
+
+
+## 实现相机根据输入旋转出现的问题
+
+在添加旋转之前，相机看向物体的角度是固定的
+```csharp
+Vector3 direction = transform.forward;
+```
+
+添加旋转功能之后，相机看向物体的角度会随着旋转而变化
+```csharp
+// 这里四元数乘以向量表示将向量旋转到四元数对应的角度
+Vector3 direction = Quaternion.Euler(orbitAngles) * Vector3.forward;
+```

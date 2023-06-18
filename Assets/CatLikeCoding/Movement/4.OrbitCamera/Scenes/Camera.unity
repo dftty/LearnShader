@@ -142,7 +142,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &40455761
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -297,7 +297,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh40166
+  m_Name: pb_Mesh21490
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -510,6 +510,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Sphere
       objectReference: {fileID: 0}
+    - target: {fileID: 8700770459056546673, guid: 64e4c19b52fc11448beb35a53fb28517, type: 3}
+      propertyPath: playerInputSpace
+      value: 
+      objectReference: {fileID: 2034389234}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 64e4c19b52fc11448beb35a53fb28517, type: 3}
 --- !u!4 &446753229 stripped
@@ -707,7 +711,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   focus: {fileID: 446753229}
-  focusRadis: 1
+  focusRadis: 0.12
   distance: 4.7
   focusCentering: 0.5
   rotateSpeed: 90

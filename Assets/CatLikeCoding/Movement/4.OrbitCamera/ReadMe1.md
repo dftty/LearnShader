@@ -21,3 +21,15 @@ contactNormal为物体地面法线向量，因此在ClearState函数中应该将
 float currentX = Vector3.Dot(velocity, xAxis);
 float currentZ = Vector3.Dot(velocity, zAxis);
 ```
+
+## 学习过程中注意到的一个关于向量归一化的问题
+```csharp
+Vector2 a = new Vector2(1, 0.3f);
+Debug.Log(a);                       //在Unity中会输出 (1.0, 0.3)
+a.Normalize();
+Debug.Log(a.magnitude);             //在Unity中会输出 1
+Debug.Log(a.sqrMagnitude);          //在Unity中会输出 1
+Debug.Log(a.ToString());            //在Unity中会输出 (1.0, 0.3)  这里看起来像没有归一化，但是其实已经归一化了，原因是ToString()函数对x和y进行了四舍五入
+Debug.Log(a.x);                     //在Unity中会输出 0.9578263
+Debug.Log(a.y);                     //在Unity中会输出 0.2873479
+```

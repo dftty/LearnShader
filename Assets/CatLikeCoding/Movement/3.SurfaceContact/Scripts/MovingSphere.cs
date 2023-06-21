@@ -263,6 +263,9 @@ namespace SurfaceContace
             {
                 Vector3 normal = other.GetContact(i).normal;
 
+                Debug.Log(normal.y);
+                Debug.Log(other.gameObject.layer);
+                Debug.Log(GetMinDot(other.gameObject.layer));
                 if (normal.y > dot)
                 {
                     groundContactCount += 1;

@@ -50,13 +50,14 @@ namespace CustomGravity
         Vector3 desireSpeed;
         Vector3 velocity;
         Rigidbody body;
+        Vector3 upAxis, forwardAxis, rightAxis;
 
         void Start()
         {
             body = GetComponent<Rigidbody>();
+            body.useGravity = false;
             maxGroundedAngle = Mathf.Cos(maxGroundedAngle * Mathf.Deg2Rad);
             minStairDotProduct = Mathf.Cos(maxStairAngle * Mathf.Deg2Rad);
-            Debug.Log(minStairDotProduct);
         }
 
         void Update()
@@ -72,39 +73,36 @@ namespace CustomGravity
 
             if (playerInputSpace)
             {
-                // 因为角色移动的平面是XZ平面，因此将向量的y都设置为0
-                Vector3 forward = playerInputSpace.forward;
-                forward.y = 0;
-                forward.Normalize();
-                Vector3 right = playerInputSpace.right;
-                right.y = 0;
-                right.Normalize();
-
-                desireSpeed = (forward * playerInput.y + right * playerInput.x) * maxSpeed;
+                forwardAxis = ProjectDirectionOnPlane(playerInputSpace.forward, upAxis);
+                rightAxis = ProjectDirectionOnPlane(playerInputSpace.right, upAxis);
             }
             else 
             {
-                desireSpeed = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
+                forwardAxis = ProjectDirectionOnPlane(Vector3.forward, upAxis);
+                rightAxis = ProjectDirectionOnPlane(Vector3.right, upAxis);
             }
 
+            desireSpeed = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
         }
 
         void FixedUpdate()
         {
+            Vector3 gravity = CustomGravity1.GetGravity(body.position, out upAxis);
             UpdateState();
             AdjustVelocity();
 
             if (desireJump)
             {
                 desireJump = false;
-                Jump();
+                Jump(gravity);
             }
 
+            velocity += gravity * Time.deltaTime;
             body.velocity = velocity;
             ClearState();
         }
 
-        void Jump()
+        void Jump(Vector3 gravity)
         {
             Vector3 jumpDirection;
 
@@ -127,8 +125,8 @@ namespace CustomGravity
 
             stepsSinceLastJump = 0;
             jumpPhase += 1;
-            jumpDirection = (jumpDirection + Vector3.up).normalized;
-            float jumpSpeed = Mathf.Sqrt(-2 * Physics.gravity.y * jumpHeight);
+            jumpDirection = (jumpDirection + upAxis).normalized;
+            float jumpSpeed = Mathf.Sqrt(2 * gravity.magnitude * jumpHeight);
             float alignSpeed = Vector3.Dot(velocity, jumpDirection);
             
             if (jumpSpeed > alignSpeed)
@@ -156,7 +154,7 @@ namespace CustomGravity
             }
             else 
             {
-                contactNormal = Vector3.up;
+                contactNormal = upAxis;
             }
         }
 
@@ -166,7 +164,8 @@ namespace CustomGravity
             {
                 steepContactNormal.Normalize();
 
-                if (steepContactNormal.y > minGroundedDotProduct)
+                float upDot = Vector3.Dot(steepContactNormal, upAxis);
+                if (upDot > minGroundedDotProduct)
                 {
                     groundContactCount = 1;
                     contactNormal = steepContactNormal;
@@ -189,12 +188,13 @@ namespace CustomGravity
                 return false;
             }
 
-            if (!Physics.Raycast(transform.position, Vector3.down, out var hit, probeDistance, probeMask))
+            if (!Physics.Raycast(transform.position, -upAxis, out var hit, probeDistance, probeMask))
             {
                 return false;
             }
 
-            if (hit.normal.y < GetMinDot(hit.collider.gameObject.layer))
+            float upDot = Vector3.Dot(hit.normal, upAxis);
+            if (upDot < GetMinDot(hit.collider.gameObject.layer))
             {
                 return false;
             }
@@ -215,8 +215,8 @@ namespace CustomGravity
         {
             float acceleration = onGround ? maxAcceleration : maxAirAcceleration;
 
-            Vector3 xAxis = ProjectOnPlane(Vector3.right);
-            Vector3 zAxis = ProjectOnPlane(Vector3.forward);
+            Vector3 xAxis = ProjectDirectionOnPlane(rightAxis, contactNormal);
+            Vector3 zAxis = ProjectDirectionOnPlane(forwardAxis, contactNormal);
 
             float currentX = Vector3.Dot(velocity, xAxis);
             float currentZ = Vector3.Dot(velocity, zAxis);
@@ -227,9 +227,9 @@ namespace CustomGravity
             velocity += (newX - currentX) * xAxis + (newZ - currentZ) * zAxis; 
         }
 
-        Vector3 ProjectOnPlane(Vector3 vec)
+        Vector3 ProjectDirectionOnPlane(Vector3 vec, Vector3 normal)
         {
-            return vec - contactNormal * Vector3.Dot(contactNormal, vec);
+            return (vec - normal * Vector3.Dot(normal, vec)).normalized;
         }
 
         void ClearState()
@@ -256,13 +256,13 @@ namespace CustomGravity
             for (int i = 0; i < other.contactCount; i++)
             {
                 Vector3 normal = other.GetContact(i).normal;
-
-                if (normal.y > GetMinDot(other.gameObject.layer))
+                float upDot = Vector3.Dot(normal, upAxis);
+                if (upDot > GetMinDot(other.gameObject.layer))
                 {
                     groundContactCount += 1;
                     contactNormal += normal;
                 }
-                else if (normal.y > -0.001f)
+                else if (upDot > -0.001f)
                 {
                     steepContactCount += 1;
                     steepContactNormal += normal;

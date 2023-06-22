@@ -33,6 +33,8 @@ namespace CustomGravity
         Vector3 focusPoint;
         Camera regularCamera;
         float lastManualRotationTime;
+        Quaternion gravityAlignment = Quaternion.identity;
+        Quaternion orbitRotation;
 
         Vector3 CameraHalfExtends
         {
@@ -50,24 +52,22 @@ namespace CustomGravity
         {
             regularCamera = GetComponent<Camera>();
             focusPoint = focus.position;
-            transform.rotation = Quaternion.Euler(orbitAngles);
+            transform.rotation = orbitRotation = Quaternion.Euler(orbitAngles);
             minVerticalAngle = minVerticalAngle > maxVerticalAngle ? maxVerticalAngle : minVerticalAngle;
         }
 
         void LateUpdate()
         {
+            gravityAlignment = Quaternion.FromToRotation(gravityAlignment * Vector3.up, CustomGravity1.GetGravity(focusPoint)) * gravityAlignment;
+
             UpdateFocusPoint();
-            Quaternion lookRotation;
             if (ManualRotation() || AutomaticRotation())
             {
                 ConstrainAngles();
-                lookRotation = Quaternion.Euler(orbitAngles);
-            }
-            else 
-            {
-                lookRotation = transform.rotation;
+                orbitRotation = Quaternion.Euler(orbitAngles);
             }
 
+            Quaternion lookRotation = gravityAlignment * orbitRotation;
             Vector3 lookDirection = lookRotation * Vector3.forward;
             Vector3 lookPosition = focusPoint - lookDirection * distance;
 
@@ -97,9 +97,9 @@ namespace CustomGravity
             }
 
             // 跟随的物体相对上一帧的位移
+            Vector3 alignedDelta = Quaternion.Inverse(gravityAlignment) * (focusPoint - previourFocusPoint);
             Vector2 movement = new Vector2(
-                focusPoint.x - previourFocusPoint.x,
-                focusPoint.z - previourFocusPoint.z
+                alignedDelta.x, alignedDelta.z
             );
 
             float movementDeltaSqr = movement.sqrMagnitude;

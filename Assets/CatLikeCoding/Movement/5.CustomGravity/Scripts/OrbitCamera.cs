@@ -58,7 +58,10 @@ namespace CustomGravity
 
         void LateUpdate()
         {
-            gravityAlignment = Quaternion.FromToRotation(gravityAlignment * Vector3.up, CustomGravity1.GetGravity(focusPoint)) * gravityAlignment;
+            gravityAlignment = Quaternion.FromToRotation(
+                gravityAlignment * Vector3.up, 
+                CustomGravity1.GetUpAxis(focusPoint)
+                ) * gravityAlignment;
 
             UpdateFocusPoint();
             if (ManualRotation() || AutomaticRotation())

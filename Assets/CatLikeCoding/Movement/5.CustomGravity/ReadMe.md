@@ -13,3 +13,6 @@
 ## 3. 简单的自定义重力
 
 这里我们将重力源定为世界原点，那么物体位置向量就是重力的方向
+
+### 3.1 在相机脚本中遇到的问题
+在lateUpdate函数中计算gravityAlignment时，第二个参数应该是CustomGravity1.GetUpAxis(focusPoint)

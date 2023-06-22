@@ -92,7 +92,6 @@ namespace CustomGravity
         void FixedUpdate()
         {
             UpdateState();
-            Debug.Log(contactNormal);
             AdjustVelocity();
 
             if (desireJump)

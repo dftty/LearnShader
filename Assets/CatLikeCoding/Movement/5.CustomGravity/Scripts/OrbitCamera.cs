@@ -19,6 +19,12 @@ namespace CustomGravity
         [SerializeField, Range(0, 360f)]
         float rotateSpeed = 90f;
 
+        [SerializeField, Range(1, 10)]
+        float delayTime = 5f;
+
+        [SerializeField, Range(0f, 90f)]
+        float alignSmoothRange = 45f;
+
         [SerializeField]
         Transform focus;
 
@@ -26,6 +32,7 @@ namespace CustomGravity
         Vector3 previourFocusPoint;
         Vector3 focusPoint;
         Camera regularCamera;
+        float lastManualRotationTime;
 
         Vector3 CameraHalfExtends
         {
@@ -51,7 +58,7 @@ namespace CustomGravity
         {
             UpdateFocusPoint();
             Quaternion lookRotation;
-            if (ManualRotation())
+            if (ManualRotation() || AutomaticRotation())
             {
                 ConstrainAngles();
                 lookRotation = Quaternion.Euler(orbitAngles);
@@ -80,6 +87,43 @@ namespace CustomGravity
             }
 
             transform.SetPositionAndRotation(lookPosition, lookRotation);
+        }
+
+        bool AutomaticRotation()
+        {
+            if (Time.unscaledTime - lastManualRotationTime < delayTime)
+            {
+                return false;
+            }
+
+            // 跟随的物体相对上一帧的位移
+            Vector2 movement = new Vector2(
+                focusPoint.x - previourFocusPoint.x,
+                focusPoint.z - previourFocusPoint.z
+            );
+
+            float movementDeltaSqr = movement.sqrMagnitude;
+            if (movementDeltaSqr < 0.001f)
+            {
+                return false;
+            }
+
+            float headingAngle = GetAngle(movement / Mathf.Sqrt(movementDeltaSqr));
+            float deltaAngle = Mathf.Abs(Mathf.DeltaAngle(orbitAngles.y, headingAngle));
+            float rotationChange = rotateSpeed * Time.unscaledDeltaTime;
+
+            if (deltaAngle < alignSmoothRange)
+            {
+                rotationChange *= deltaAngle / alignSmoothRange;
+            }
+            else if (180 - deltaAngle < alignSmoothRange)
+            {
+                rotationChange *= (180 - deltaAngle) / alignSmoothRange;
+            }
+
+            orbitAngles.y = Mathf.MoveTowardsAngle(orbitAngles.y, headingAngle, rotationChange);
+
+            return true;
         }
 
         void UpdateFocusPoint()
@@ -113,6 +157,7 @@ namespace CustomGravity
             if (input.x < -e || input.x > e || input.y < -e || input.y > e)
             {
                 orbitAngles += rotateSpeed * input * Time.unscaledDeltaTime;
+                lastManualRotationTime = Time.unscaledTime;
                 return true;
             }
 
@@ -132,6 +177,18 @@ namespace CustomGravity
             {
                 orbitAngles.y -= 360f;
             }
+        }
+
+        /// <summary>
+        /// 该函数计算的是xy坐标轴内，该向量和y轴之间的夹角
+        /// 计算出角度后，还应该根据x值的正负进行判断
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <returns></returns>
+        static float GetAngle(Vector2 direction)
+        {
+            float angle = Mathf.Acos(direction.y) * Mathf.Rad2Deg;
+            return direction.x > 0 ? angle : 360 - angle;
         }
     }
 }

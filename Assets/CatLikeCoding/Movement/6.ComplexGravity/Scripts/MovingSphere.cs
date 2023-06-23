@@ -247,5 +247,22 @@ namespace ComplexGravity
 			return (stairsMask & (1 << layer)) == 0 ?
 				minGroundDotProduct : minStairsDotProduct;
 		}
+
+		void OnDrawGizmos()
+		{
+			if (!Application.isPlaying)
+			{
+				return ;
+			}
+
+			Gizmos.matrix = transform.localToWorldMatrix;
+			Gizmos.DrawLine(Vector3.zero, contactNormal);
+			Gizmos.color = Color.red;
+			Gizmos.DrawLine(Vector3.zero, rightAxis);
+			Gizmos.color = Color.yellow;
+			Gizmos.DrawLine(Vector3.zero, forwardAxis);
+			Gizmos.color = Color.cyan;
+			Gizmos.DrawLine(Vector3.zero, upAxis);
+		}
 	}
 }

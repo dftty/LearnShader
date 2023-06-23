@@ -4,7 +4,7 @@ namespace ComplexGravity
 {
     public class GravitySource : MonoBehaviour
     {
-        public Vector3 GetGravity(Vector3 position)
+        public virtual Vector3 GetGravity(Vector3 position)
         {
             return Physics.gravity;
         }

@@ -1,5 +1,21 @@
 # 复杂重力效果
 
+## 实现重力在一定范围内逐渐减小的效果
+
+```csharp
+float outerDistance = 3;
+float outerFalloffDistance = 6;
+
+float outerFalloffFactor = 1 / (outerFallOffDistance - outerDistance);
+// 实现distance在outerDistance和outerFalloffDistance
+float distance;
+float g = 1;
+if (distance > outerDistance)
+{
+    g *= 1 - (distance - outerDistance) * outerFalloffFactor;
+}
+```
+
 ## 实现GravityPlane
 
 在实现重力平面，然后组成一个box之后，为了解决移动物体在重力平面交界处平滑过渡的问题，需要进行如下的修改
@@ -12,3 +28,7 @@
 1. 经过测试，第一条中其实和maxAcceleration的大小有关系，根据MoveSphere中计算速度的方式，当物体撞向两个垂直的重力平面之间时，速度会在一瞬间变为0，这时候需要在当前这一帧加速度足够大，才能保证物体走出这个夹缝，否则就会一直卡住
 2. 当物体处于夹缝中间时，此时物体的upAxis为夹缝的法线，此时和物体交互的两个重力平面和upAxis之间的夹角为45度，所以当maxGroundAngle设置小于45度时，此时就会认为物体不在地面上，导致物体无法前进
 3. 和Friction Combine的设置有关系，当设置为Average时，物体在两个重力平面之间的摩擦力会变大，这是如果提高物体的maxAcceleration，也能够解决物体卡住的问题
+
+
+## 实现GravityBox
+

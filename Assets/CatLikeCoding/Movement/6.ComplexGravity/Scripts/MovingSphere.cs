@@ -81,7 +81,7 @@ namespace ComplexGravity
 			}
 			desiredVelocity =
 				new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;
-			
+
 			desiredJump |= Input.GetButtonDown("Jump");
 		}
 

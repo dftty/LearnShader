@@ -50,13 +50,16 @@ namespace MovingTheGround
 
         Vector3 velocity;
         Vector3 desireVelocity;
-        Vector3 xAxis, zAxis;
+
+        Vector3 gravity;
+        Vector3 upAxis, rightAxis, forwardAxis;
 
         Rigidbody body;
 
         void Start()
         {
             body = GetComponent<Rigidbody>();
+            body.useGravity = false;
             minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
             minStairsDotProduct = Mathf.Cos(maxStairsAngle * Mathf.Deg2Rad);
         }
@@ -74,17 +77,13 @@ namespace MovingTheGround
 
             if (playerInputSpace)
             {
-                xAxis = playerInputSpace.right;
-                xAxis.y = 0;
-                xAxis.Normalize();
-                zAxis = playerInputSpace.forward;
-                zAxis.y = 0;
-                zAxis.Normalize();
+                rightAxis = ProjectOnPlane(playerInputSpace.right, contactNormal);
+                forwardAxis = ProjectOnPlane(playerInputSpace.forward, contactNormal);
             }
             else 
             {
-                xAxis = Vector3.right;
-                zAxis = Vector3.forward;
+                rightAxis = ProjectOnPlane(Vector3.right, contactNormal);
+                forwardAxis = ProjectOnPlane(Vector3.forward, contactNormal);
             }
 
             desireVelocity = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
@@ -92,15 +91,18 @@ namespace MovingTheGround
 
         void FixedUpdate()
         {
+            gravity = CustomGravity.GetGravity(transform.position, out upAxis);
+
             UpdateState();
             AdjustVelocity();
 
             if (desireJump)
             {
                 desireJump = false;
-                Jump();
+                Jump(gravity);
             }
 
+            velocity += gravity * Time.deltaTime;
             body.velocity = velocity;
             ClearState();
         }
@@ -122,7 +124,7 @@ namespace MovingTheGround
             }
             else 
             {
-                contactNormal = Vector3.up;
+                contactNormal = upAxis;
             }
         }
 
@@ -155,7 +157,7 @@ namespace MovingTheGround
                 return false;
             }
 
-            if (!Physics.Raycast(body.position, Vector3.down, out RaycastHit hit, probeDistance, probeMask))
+            if (!Physics.Raycast(body.position, gravity.normalized, out RaycastHit hit, probeDistance, probeMask))
             {
                 return false;
             }
@@ -178,7 +180,7 @@ namespace MovingTheGround
             return true;
         }
 
-        void Jump()
+        void Jump(Vector3 gravity)
         {
             Vector3 jumpDirection;
 
@@ -204,7 +206,7 @@ namespace MovingTheGround
                 return ;
             }
 
-            float jumpSpeed = Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
+            float jumpSpeed = Mathf.Sqrt(2f * gravity.magnitude * jumpHeight);
             stepsSinceLastJump = 0;
 
             float alignedSpeed = Vector3.Dot(velocity, jumpDirection);
@@ -212,15 +214,15 @@ namespace MovingTheGround
             {
                 jumpSpeed = Mathf.Max(jumpSpeed - alignedSpeed, 0);
             }
-            jumpDirection = (jumpDirection + Vector3.up).normalized;
+            jumpDirection = (jumpDirection + upAxis).normalized;
 
             velocity += jumpDirection * jumpSpeed;
         }
 
         void AdjustVelocity()
         {
-            xAxis = ProjectOnPlane(xAxis, contactNormal).normalized;
-            zAxis = ProjectOnPlane(zAxis, contactNormal).normalized;
+            Vector3 xAxis = ProjectOnPlane(rightAxis, contactNormal);
+            Vector3 zAxis = ProjectOnPlane(forwardAxis, contactNormal);
 
             float currentX = Vector3.Dot(velocity, xAxis);
             float currentZ = Vector3.Dot(velocity, zAxis);
@@ -231,7 +233,7 @@ namespace MovingTheGround
             float newX = Mathf.MoveTowards(currentX, desireVelocity.x, maxSpeedChange);
             float newZ = Mathf.MoveTowards(currentZ, desireVelocity.z, maxSpeedChange);
 
-            velocity += xAxis * (newX - currentX) + zAxis * (newZ - currentZ);
+            velocity += rightAxis * (newX - currentX) + forwardAxis * (newZ - currentZ);
         }
 
         void ClearState()
@@ -280,5 +282,22 @@ namespace MovingTheGround
         {
             return (stairsMask & (1 << layer)) == 0 ? minGroundDotProduct : minStairsDotProduct;
         }
+
+        void OnDrawGizmos()
+		{
+			if (!Application.isPlaying)
+			{
+				return ;
+			}
+
+			Gizmos.matrix = transform.localToWorldMatrix;
+			Gizmos.DrawLine(Vector3.zero, contactNormal);
+			Gizmos.color = Color.red;
+			Gizmos.DrawLine(Vector3.zero, rightAxis);
+			Gizmos.color = Color.yellow;
+			Gizmos.DrawLine(Vector3.zero, forwardAxis);
+			Gizmos.color = Color.cyan;
+			Gizmos.DrawLine(Vector3.zero, upAxis);
+		}
     }
 }

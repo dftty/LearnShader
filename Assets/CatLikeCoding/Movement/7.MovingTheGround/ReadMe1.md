@@ -31,3 +31,9 @@ Vector3 lookPosition = focusPoint - lookDirection * distance;
 Vector3 rectPosition = castFrom + castDirection * hit.distance;
 lookPosition = rectPosition - rectOffset;
 ```
+
+# 重新实现第五节
+
+* 定义CustomGravity脚本，其中有获取重力以及获取UpAxis的静态函数，获取重力函数简化为当前物体位置乘以物理世界的重力的y分量
+* 在MovingSphere中的FixedUpdate获取gravity后，此脚本需要禁用刚体的重力，然后将获取的重力应用到速度上
+* 物体脚本添加自定义重力后，相机跟随的角度

@@ -48,26 +48,28 @@ namespace MovingTheGround
         Vector3 input;
         float lastManualRotationTime;
 
+        Quaternion gravityAlignment;
+        Quaternion orbitRotation;
+
         void Start()
         {
             focusPoint = focus.position;
             transform.rotation = Quaternion.Euler(orbitAngles);
             regularCamera = GetComponent<Camera>();
+            gravityAlignment = Quaternion.identity;
         }
 
         void LateUpdate()
         {
+            UpdateAligment();
             UpdateFocusPoint();
-            Quaternion lookRotation;
             if (ManualRotation() || AutomaticRotation())
             {
                 ConstrainAngles();
-                lookRotation = Quaternion.Euler(orbitAngles);
+                orbitRotation = Quaternion.Euler(orbitAngles);
             }
-            else 
-            {
-                lookRotation = transform.localRotation;
-            }
+
+            Quaternion lookRotation = gravityAlignment * orbitRotation;
 
             Vector3 lookDirection = lookRotation * Vector3.forward;
             Vector3 lookPosition = focusPoint - lookDirection * distance;
@@ -86,6 +88,11 @@ namespace MovingTheGround
             }
 
             transform.SetPositionAndRotation(lookPosition, lookRotation);
+        }
+
+        void UpdateAligment()
+        {
+            gravityAlignment = Quaternion.FromToRotation(gravityAlignment * Vector3.up, CustomGravity.GetUpAxis(focusPoint)) * gravityAlignment;
         }
 
         void UpdateFocusPoint()

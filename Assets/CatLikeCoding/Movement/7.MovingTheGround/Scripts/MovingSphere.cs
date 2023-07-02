@@ -28,6 +28,9 @@ namespace MovingTheGround
         [SerializeField, Min(0f)]
         float probeDistance = 1f;
 
+        [SerializeField]
+        Transform playerInputSpace;
+
         int stepsSinceLastGrounded;
         int stepsSinceLastJump;
 
@@ -47,6 +50,7 @@ namespace MovingTheGround
 
         Vector3 velocity;
         Vector3 desireSpeed;
+        Vector3 xAxis, zAxis;
 
         Rigidbody body;
 
@@ -66,7 +70,22 @@ namespace MovingTheGround
             desireJump |= Input.GetButtonDown("Jump");
 
             // 将input的长度限制到1
-            input = Vector2.ClampMagnitude(input, 1);
+            input = Vector2.ClampMagnitude(input, 1); 
+
+            if (playerInputSpace)
+            {
+                xAxis = playerInputSpace.right;
+                xAxis.y = 0;
+                xAxis.Normalize();
+                zAxis = playerInputSpace.forward;
+                zAxis.y = 0;
+                zAxis.Normalize();
+            }
+            else 
+            {
+                xAxis = Vector3.right;
+                zAxis = Vector3.forward;
+            }
 
             desireSpeed = new Vector3(input.x, 0, input.y) * maxSpeed;
         }
@@ -200,8 +219,8 @@ namespace MovingTheGround
 
         void AdjustVelocity()
         {
-            Vector3 xAxis = ProjectOnPlane(Vector3.right, contactNormal).normalized;
-            Vector3 zAxis = ProjectOnPlane(Vector3.forward, contactNormal).normalized;
+            xAxis = ProjectOnPlane(xAxis, contactNormal).normalized;
+            zAxis = ProjectOnPlane(zAxis, contactNormal).normalized;
 
             float currentX = Vector3.Dot(velocity, xAxis);
             float currentZ = Vector3.Dot(velocity, zAxis);

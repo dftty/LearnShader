@@ -8653,7 +8653,7 @@ MonoBehaviour:
   distance: 5
   focusRadius: 1
   focusCentering: 0.5
-  rotateSpeed: 90
+  rotationSpeed: 90
   minVerticalAngle: 20
   maxVerticalAngle: 60
   delayTime: 5
@@ -10679,6 +10679,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -8188892802178830703, guid: 0be9c9ee66bc9794b99e1a0633dab60c,
+        type: 3}
+      propertyPath: maxSpeed
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: -8188892802178830703, guid: 0be9c9ee66bc9794b99e1a0633dab60c,
         type: 3}
       propertyPath: playerInputSpace

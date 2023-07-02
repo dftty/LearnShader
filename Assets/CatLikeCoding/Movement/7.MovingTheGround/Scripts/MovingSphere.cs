@@ -49,7 +49,7 @@ namespace MovingTheGround
         Vector3 steepNormal;
 
         Vector3 velocity;
-        Vector3 desireSpeed;
+        Vector3 desireVelocity;
         Vector3 xAxis, zAxis;
 
         Rigidbody body;
@@ -63,14 +63,14 @@ namespace MovingTheGround
 
         void Update()
         {
-            Vector2 input = Vector2.zero;
-            input.x = Input.GetAxis("Horizontal");
-            input.y = Input.GetAxis("Vertical");
+            Vector2 playerInput = Vector2.zero;
+            playerInput.x = Input.GetAxis("Horizontal");
+            playerInput.y = Input.GetAxis("Vertical");
 
             desireJump |= Input.GetButtonDown("Jump");
 
             // 将input的长度限制到1
-            input = Vector2.ClampMagnitude(input, 1); 
+            playerInput = Vector2.ClampMagnitude(playerInput, 1); 
 
             if (playerInputSpace)
             {
@@ -87,7 +87,7 @@ namespace MovingTheGround
                 zAxis = Vector3.forward;
             }
 
-            desireSpeed = new Vector3(input.x, 0, input.y) * maxSpeed;
+            desireVelocity = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
         }
 
         void FixedUpdate()
@@ -228,8 +228,8 @@ namespace MovingTheGround
             float acceleration = onGround ? maxAcceleration : maxAirAcfeleration;
             float maxSpeedChange = acceleration * Time.deltaTime;
 
-            float newX = Mathf.MoveTowards(currentX, desireSpeed.x, maxSpeedChange);
-            float newZ = Mathf.MoveTowards(currentZ, desireSpeed.z, maxSpeedChange);
+            float newX = Mathf.MoveTowards(currentX, desireVelocity.x, maxSpeedChange);
+            float newZ = Mathf.MoveTowards(currentZ, desireVelocity.z, maxSpeedChange);
 
             velocity += xAxis * (newX - currentX) + zAxis * (newZ - currentZ);
         }

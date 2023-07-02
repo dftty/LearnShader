@@ -23,3 +23,11 @@ Vector3 lookDirection = lookRotation * Vector3.forward;
 // Vector3 lookPosition = focusPoint - transform.forward * distance;
 Vector3 lookPosition = focusPoint - lookDirection * distance;
 ```
+
+## 相机碰撞检测
+
+在检测到碰撞后，相机位置的计算方式如下
+```csharp
+Vector3 rectPosition = castFrom + castDirection * hit.distance;
+lookPosition = rectPosition - rectOffset;
+```

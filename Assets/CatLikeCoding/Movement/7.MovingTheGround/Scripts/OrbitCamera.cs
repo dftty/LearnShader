@@ -28,6 +28,20 @@ namespace MovingTheGround
         [SerializeField]
         Transform focus;
 
+        Vector3 CameraHalfExtends
+        {
+            get
+            {
+                Vector3 halfExtends = Vector3.zero;
+                halfExtends.y = regularCamera.nearClipPlane * Mathf.Atan(regularCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                halfExtends.x = regularCamera.aspect * halfExtends.x;
+                halfExtends.z = 0;
+                return halfExtends;
+            }
+        }
+
+        Camera regularCamera;
+
         Vector2 orbitAngles = new Vector2(45, 0);
         Vector3 focusPoint;
         Vector3 previousFocusPoint;
@@ -38,6 +52,7 @@ namespace MovingTheGround
         {
             focusPoint = focus.position;
             transform.rotation = Quaternion.Euler(orbitAngles);
+            regularCamera = GetComponent<Camera>();
         }
 
         void LateUpdate()
@@ -56,6 +71,20 @@ namespace MovingTheGround
 
             Vector3 lookDirection = lookRotation * Vector3.forward;
             Vector3 lookPosition = focusPoint - lookDirection * distance;
+
+            Vector3 rectOffset = lookDirection * regularCamera.nearClipPlane;
+            Vector3 rectPosition = lookPosition + rectOffset;
+            Vector3 castFrom = focus.position;
+            Vector3 castLine = rectPosition - castFrom;
+            float castDistance = castLine.magnitude;
+            Vector3 castDirection = castLine / castDistance;
+
+            if (Physics.BoxCast(castFrom, CameraHalfExtends, castDirection, out var hit, lookRotation, castDistance))
+            {
+                rectPosition = castFrom + castDirection * hit.distance;
+                lookPosition = rectPosition - rectOffset;
+            }
+
             transform.SetPositionAndRotation(lookPosition, lookRotation);
         }
 
@@ -128,10 +157,10 @@ namespace MovingTheGround
             return true;
         }
 
-        float GetAngle(Vector2 dir)
+        float GetAngle(Vector2 direction)
         {
-            float angle = Mathf.Acos(dir.y) * Mathf.Rad2Deg;
-            return dir.x > 0 ? angle : 360 - angle;
+            float angle = Mathf.Acos(direction.y) * Mathf.Rad2Deg;
+            return direction.x > 0 ? angle : 360 - angle;
         }
 
         bool ManualRotation()

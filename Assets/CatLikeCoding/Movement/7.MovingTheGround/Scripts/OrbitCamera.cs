@@ -25,6 +25,9 @@ namespace MovingTheGround
         [SerializeField, Range(0, 90)]
         float alignSmoothRange = 45f;
 
+        [SerializeField, Min(0)]
+        float upAlignmentSpeed = 360f;  
+
         [SerializeField]
         Transform focus;
 
@@ -48,7 +51,7 @@ namespace MovingTheGround
         Vector3 input;
         float lastManualRotationTime;
 
-        Quaternion gravityAlignment;
+        Quaternion gravityAlignment = Quaternion.identity;
         Quaternion orbitRotation;
 
         void Start()
@@ -56,12 +59,11 @@ namespace MovingTheGround
             focusPoint = focus.position;
             transform.rotation = Quaternion.Euler(orbitAngles);
             regularCamera = GetComponent<Camera>();
-            gravityAlignment = Quaternion.identity;
         }
 
         void LateUpdate()
         {
-            UpdateAligment();
+            UpdateGravityAligment();
             UpdateFocusPoint();
             if (ManualRotation() || AutomaticRotation())
             {
@@ -90,9 +92,26 @@ namespace MovingTheGround
             transform.SetPositionAndRotation(lookPosition, lookRotation);
         }
 
-        void UpdateAligment()
+        void UpdateGravityAligment()
         {
-            gravityAlignment = Quaternion.FromToRotation(gravityAlignment * Vector3.up, CustomGravity.GetUpAxis(focusPoint)) * gravityAlignment;
+            Vector3 fromUp = gravityAlignment * Vector3.up;
+            Vector3 toUp = CustomGravity.GetUpAxis(focus.position);
+
+            // 计算两个向量之间的夹角
+            float dot = Mathf.Clamp(Vector3.Dot(fromUp, toUp), -1, 1);
+            float angle = Mathf.Acos(dot) * Mathf.Rad2Deg;
+
+            float maxAngle = upAlignmentSpeed * Time.deltaTime;
+            Quaternion newAligment = Quaternion.FromToRotation(fromUp, toUp) * gravityAlignment;
+
+            if (angle < maxAngle)
+            {
+                gravityAlignment = newAligment;
+            }
+            else 
+            {
+                gravityAlignment = Quaternion.SlerpUnclamped(gravityAlignment, newAligment, maxAngle / angle);
+            }
         }
 
         void UpdateFocusPoint()
@@ -135,9 +154,10 @@ namespace MovingTheGround
                 return false;
             }
 
+            Vector3 alignedDelta = Quaternion.Inverse(gravityAlignment) * (focusPoint - previousFocusPoint);
             Vector2 movement = new Vector2(
-                focusPoint.x - previousFocusPoint.x,
-                focusPoint.z - previousFocusPoint.z
+                alignedDelta.x,
+                alignedDelta.z
             );
 
             float movementSqrt = movement.sqrMagnitude;

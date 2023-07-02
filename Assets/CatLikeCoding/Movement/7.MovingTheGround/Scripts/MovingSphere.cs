@@ -162,7 +162,8 @@ namespace MovingTheGround
                 return false;
             }
 
-            if (hit.normal.y < GetMinDot(hit.collider.gameObject.layer))
+            float upDot = Vector3.Dot(hit.normal, upAxis);
+            if (upDot < GetMinDot(hit.collider.gameObject.layer))
             {
                 return false;
             }
@@ -247,7 +248,7 @@ namespace MovingTheGround
 
         Vector3 ProjectOnPlane(Vector3 vector, Vector3 normal)
         {
-            return vector - Vector3.Dot(vector, normal) * normal;
+            return (vector - Vector3.Dot(vector, normal) * normal).normalized;
         }
 
         void OnCollisionEnter(Collision other)
@@ -265,12 +266,13 @@ namespace MovingTheGround
             for (int i = 0; i < other.contactCount; i++)
             {
                 Vector3 normal = other.GetContact(i).normal;
-                if (normal.y >= GetMinDot(other.gameObject.layer))
+                float upDot = Vector3.Dot(normal, upAxis);
+                if (upDot >= GetMinDot(other.gameObject.layer))
                 {
                     groundContactCount += 1;
                     contactNormal += normal;
                 }
-                else 
+                else if (upDot > -0.001f)
                 {
                     steepContactCount += 1;
                     steepNormal += normal;
@@ -291,13 +293,14 @@ namespace MovingTheGround
 			}
 
 			Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.color = Color.black;
 			Gizmos.DrawLine(Vector3.zero, contactNormal);
 			Gizmos.color = Color.red;
 			Gizmos.DrawLine(Vector3.zero, rightAxis);
 			Gizmos.color = Color.yellow;
 			Gizmos.DrawLine(Vector3.zero, forwardAxis);
 			Gizmos.color = Color.cyan;
-			Gizmos.DrawLine(Vector3.zero, upAxis);
+			// Gizmos.DrawLine(Vector3.zero, upAxis);
 		}
     }
 }

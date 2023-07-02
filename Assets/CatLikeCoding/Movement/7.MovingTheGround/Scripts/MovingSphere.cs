@@ -16,7 +16,7 @@ namespace MovingTheGround
         [SerializeField, Range(0, 90)]
         float maxGroundAngle = 25f, maxStairsAngle = 50f;
 
-        [SerializeField, Range(0, 5)]
+        [SerializeField, Range(0, 10)]
         float jumpHeight = 2f;
 
         [SerializeField, Range(0, 5)]

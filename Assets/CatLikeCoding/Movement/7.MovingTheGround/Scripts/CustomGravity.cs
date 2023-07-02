@@ -32,7 +32,7 @@ namespace MovingTheGround
             {
                 g += sources[i].GetGravity(position);
             }
-            return g.normalized;
+            return g;
         }
 
         public static Vector3 GetUpAxis(Vector3 position)
@@ -54,7 +54,7 @@ namespace MovingTheGround
             }
 
             upAxis = -g.normalized;
-            return -g.normalized;
+            return g;
         }
     }
 }

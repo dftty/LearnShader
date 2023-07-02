@@ -14,7 +14,7 @@ namespace MovingTheGround
         float focusCentering = 0.5f;
 
         [SerializeField, Range(0, 360f)]
-        float rotateSpeed = 90f;
+        float rotationSpeed = 90f;
 
         [SerializeField, Range(0, 90)]
         float minVerticalAngle = 20f, maxVerticalAngle = 60f;
@@ -28,7 +28,7 @@ namespace MovingTheGround
         [SerializeField]
         Transform focus;
 
-        Vector2 orbitAngle = new Vector2(45, 0);
+        Vector2 orbitAngles = new Vector2(45, 0);
         Vector3 focusPoint;
         Vector3 previousFocusPoint;
         Vector3 input;
@@ -37,7 +37,7 @@ namespace MovingTheGround
         void Start()
         {
             focusPoint = focus.position;
-            transform.rotation = Quaternion.Euler(orbitAngle);
+            transform.rotation = Quaternion.Euler(orbitAngles);
         }
 
         void LateUpdate()
@@ -47,14 +47,15 @@ namespace MovingTheGround
             if (ManualRotation() || AutomaticRotation())
             {
                 ConstrainAngles();
-                lookRotation = Quaternion.Euler(orbitAngle);
+                lookRotation = Quaternion.Euler(orbitAngles);
             }
             else 
             {
-                lookRotation = transform.rotation;
+                lookRotation = transform.localRotation;
             }
 
-            Vector3 lookPosition = focusPoint - transform.forward * distance;
+            Vector3 lookDirection = lookRotation * Vector3.forward;
+            Vector3 lookPosition = focusPoint - lookDirection * distance;
             transform.SetPositionAndRotation(lookPosition, lookRotation);
         }
 
@@ -79,15 +80,15 @@ namespace MovingTheGround
 
         void ConstrainAngles()
         {
-            orbitAngle.x = Mathf.Clamp(orbitAngle.x, minVerticalAngle, maxVerticalAngle);
+            orbitAngles.x = Mathf.Clamp(orbitAngles.x, minVerticalAngle, maxVerticalAngle);
 
-            if (orbitAngle.y < 0f)
+            if (orbitAngles.y < 0f)
             {
-                orbitAngle.y += 360f;
+                orbitAngles.y += 360f;
             }
-            else if (orbitAngle.y > 360f)
+            else if (orbitAngles.y > 360f)
             {
-                orbitAngle.y -= 360f;
+                orbitAngles.y -= 360f;
             }
         }
 
@@ -110,8 +111,8 @@ namespace MovingTheGround
             }
 
             float headingAngle = GetAngle(movement / Mathf.Sqrt(movementSqrt));
-            float deltaAngle = Mathf.Abs(Mathf.DeltaAngle(orbitAngle.y, headingAngle));
-            float rotationChange = rotateSpeed * Time.unscaledDeltaTime;
+            float deltaAngle = Mathf.Abs(Mathf.DeltaAngle(orbitAngles.y, headingAngle));
+            float rotationChange = rotationSpeed * Time.unscaledDeltaTime;
 
             // 旋转在做小距离平滑时，因为有正向旋转以及反向旋转，因此需要判断两个
             if (deltaAngle < alignSmoothRange)
@@ -123,7 +124,7 @@ namespace MovingTheGround
                 rotationChange *= (180 - deltaAngle) / alignSmoothRange;
             }
 
-            orbitAngle.y = Mathf.MoveTowardsAngle(orbitAngle.y, headingAngle, rotationChange);
+            orbitAngles.y = Mathf.MoveTowardsAngle(orbitAngles.y, headingAngle, rotationChange);
             return true;
         }
 
@@ -144,7 +145,7 @@ namespace MovingTheGround
             const float e = 0.001f;
             if (input.x < -e || input.x > e || input.y < -e || input.y > e)
             {
-                orbitAngle += input * Time.unscaledDeltaTime * rotateSpeed;
+                orbitAngles += input * Time.unscaledDeltaTime * rotationSpeed;
                 lastManualRotationTime = Time.unscaledTime;
                 return true;
             }

@@ -30,7 +30,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1094397760452150397}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -114,7 +114,7 @@ MonoBehaviour:
   maxSnapSpeed: 10
   maxAcceleration: 10
   maxAirAcfeleration: 1
-  minGroundAngle: 25
+  maxGroundAngle: 25
   maxStairsAngle: 50
   jumpHeight: 2
   maxAirJump: 1

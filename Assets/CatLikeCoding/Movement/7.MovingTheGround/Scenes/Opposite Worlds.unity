@@ -4448,6 +4448,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0be9c9ee66bc9794b99e1a0633dab60c, type: 3}
+--- !u!4 &854516709 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6337616647470527187, guid: 0be9c9ee66bc9794b99e1a0633dab60c,
+    type: 3}
+  m_PrefabInstance: {fileID: 854516708}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -10786,22 +10792,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1822895525}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b1b8ac43c743f4ec59454ccad24d8740, type: 3}
+  m_Script: {fileID: 11500000, guid: 7ec4e6139a8ec134c87c446a5791e44c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  focus: {fileID: 0}
   distance: 5
-  focusRadius: 5
-  focusCentering: 0.5
-  rotationSpeed: 90
-  minVerticalAngle: -45
-  maxVerticalAngle: 45
-  alignDelay: 5
-  alignSmoothRange: 45
-  obstructionMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  upAlignmentSpeed: 360
+  focus: {fileID: 854516709}
 --- !u!81 &1822895527
 AudioListener:
   m_ObjectHideFlags: 0

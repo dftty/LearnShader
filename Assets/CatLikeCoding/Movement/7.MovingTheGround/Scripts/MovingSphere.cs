@@ -300,7 +300,7 @@ namespace MovingTheGround
 			Gizmos.color = Color.yellow;
 			Gizmos.DrawLine(Vector3.zero, forwardAxis);
 			Gizmos.color = Color.cyan;
-			// Gizmos.DrawLine(Vector3.zero, upAxis);
+			Gizmos.DrawLine(Vector3.zero, upAxis);
 		}
     }
 }

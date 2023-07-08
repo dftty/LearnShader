@@ -9398,6 +9398,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
         type: 3}
+      propertyPath: climbingMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 098ec89697c0dd54f80047a8dfddd240, type: 2}
+    - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
+        type: 3}
       propertyPath: playerInputSpace
       value: 
       objectReference: {fileID: 963194228}

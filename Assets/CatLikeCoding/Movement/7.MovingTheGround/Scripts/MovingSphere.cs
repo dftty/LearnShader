@@ -259,7 +259,7 @@ namespace MovingTheGround
             float newX = Mathf.MoveTowards(currentX, desireVelocity.x, maxSpeedChange);
             float newZ = Mathf.MoveTowards(currentZ, desireVelocity.z, maxSpeedChange);
 
-            velocity += rightAxis * (newX - currentX) + forwardAxis * (newZ - currentZ);
+            velocity += xAxis * (newX - currentX) + zAxis * (newZ - currentZ);
         }
 
         void ClearState()

@@ -14,7 +14,7 @@ namespace Climbing
         float maxClimbSpeed = 2f;
 
         [SerializeField, Range(0, 100)]
-        float maxAcceleration = 10, maxAirAcfeleration = 1f, maxClimbAcceleration = 2f;
+        float maxAcceleration = 10, maxAirAcceleration = 1f, maxClimbAcceleration = 2f;
 
         [SerializeField, Range(0, 90)]
         float maxGroundAngle = 25f, maxStairsAngle = 50f;
@@ -50,7 +50,7 @@ namespace Climbing
         int jumpPhase;
         bool desireJump;
 
-        bool onGround => groundContactCount > 0;
+        bool OnGround => groundContactCount > 0;
         int groundContactCount = 0;
         Vector3 contactNormal;
 
@@ -138,7 +138,7 @@ namespace Climbing
             stepsSinceLastJump += 1;
             velocity = body.velocity;
 
-            if (CheckClimbing() || onGround || SnapToGround() || CheckSteepContact())
+            if (CheckClimbing() || OnGround || SnapToGround() || CheckSteepContact())
             {
                 stepsSinceLastGrounded = 0;
                 contactNormal.Normalize();
@@ -243,7 +243,7 @@ namespace Climbing
         {
             Vector3 jumpDirection;
 
-            if (onGround)
+            if (OnGround)
             {
                 jumpDirection = contactNormal;
             }
@@ -284,32 +284,33 @@ namespace Climbing
             
             float acceleration, speed;
 
-            if (Climbing)
-            {   
-                xAxis = Vector3.Cross(contactNormal, upAxis);
-                zAxis = upAxis;
+            if (Climbing) {
                 acceleration = maxClimbAcceleration;
                 speed = maxClimbSpeed;
+                xAxis = Vector3.Cross(contactNormal, upAxis);
+                zAxis = upAxis;
             }
-            else 
-            {
+            else {
+                acceleration = OnGround ? maxAcceleration : maxAirAcceleration;
+                speed = OnGround ? maxSpeed : maxClimbSpeed;
                 xAxis = rightAxis;
                 zAxis = forwardAxis;
-                acceleration = onGround ? maxAcceleration : maxAirAcfeleration;
-                speed = maxSpeed;
             }
             xAxis = ProjectOnPlane(xAxis, contactNormal);
             zAxis = ProjectOnPlane(zAxis, contactNormal);
-            float maxSpeedChange = acceleration * Time.deltaTime;
-
+            
             Vector3 relativeVelocity = velocity - connectionVelocity;
             float currentX = Vector3.Dot(relativeVelocity, xAxis);
             float currentZ = Vector3.Dot(relativeVelocity, zAxis);
 
-            float newX = Mathf.MoveTowards(currentX, playerInput.x * maxSpeed, maxSpeedChange);
-            float newZ = Mathf.MoveTowards(currentZ, playerInput.y * maxSpeed, maxSpeedChange);
+            float maxSpeedChange = acceleration * Time.deltaTime;
 
-            velocity += rightAxis * (newX - currentX) + forwardAxis * (newZ - currentZ);
+            float newX =
+                Mathf.MoveTowards(currentX, playerInput.x * speed, maxSpeedChange);
+            float newZ =
+                Mathf.MoveTowards(currentZ, playerInput.y * speed, maxSpeedChange);
+
+            velocity += xAxis * (newX - currentX) + zAxis * (newZ - currentZ);
         }
 
         void ClearState()

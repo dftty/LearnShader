@@ -50,11 +50,14 @@ namespace MovingTheGround
 
         Vector3 velocity;
         Vector3 desireVelocity;
+        Vector3 connectionVelocity;
+
+        Vector3 connectionWorldPosition, connectionLocalPosition;
 
         Vector3 gravity;
         Vector3 upAxis, rightAxis, forwardAxis;
 
-        Rigidbody body;
+        Rigidbody body, connectedBody, previousConnectedBody;
 
         void Start()
         {
@@ -126,6 +129,26 @@ namespace MovingTheGround
             {
                 contactNormal = upAxis;
             }
+
+            if (connectedBody)
+            {
+                if (connectedBody.isKinematic && connectedBody.mass >= body.mass)
+                {
+                    UpdateConnectedVelocity();
+                }
+            }
+        }
+
+        void UpdateConnectedVelocity()
+        {
+            if (connectedBody == previousConnectedBody)
+            {
+                Vector3 connectionMovement = connectedBody.transform.TransformPoint(connectionLocalPosition) - connectionWorldPosition;
+                connectionVelocity = connectionMovement / Time.deltaTime;
+            }
+
+            connectionWorldPosition = body.position;
+            connectionLocalPosition = connectedBody.transform.InverseTransformPoint(connectionWorldPosition);
         }
 
         bool CheckSteepContact()
@@ -178,6 +201,7 @@ namespace MovingTheGround
                 velocity = (velocity - contactNormal * dot).normalized * speed;
             }
 
+            connectedBody = hit.rigidbody;
             return true;
         }
 
@@ -225,8 +249,9 @@ namespace MovingTheGround
             Vector3 xAxis = ProjectOnPlane(rightAxis, contactNormal);
             Vector3 zAxis = ProjectOnPlane(forwardAxis, contactNormal);
 
-            float currentX = Vector3.Dot(velocity, xAxis);
-            float currentZ = Vector3.Dot(velocity, zAxis);
+            Vector3 relativeVelocity = velocity - connectionVelocity;
+            float currentX = Vector3.Dot(relativeVelocity, xAxis);
+            float currentZ = Vector3.Dot(relativeVelocity, zAxis);
 
             float acceleration = onGround ? maxAcceleration : maxAirAcfeleration;
             float maxSpeedChange = acceleration * Time.deltaTime;
@@ -244,6 +269,9 @@ namespace MovingTheGround
 
             steepContactCount = 0;
             steepNormal = Vector3.zero;
+
+            previousConnectedBody = connectedBody;
+            connectedBody = null;
         }
 
         Vector3 ProjectOnPlane(Vector3 vector, Vector3 normal)
@@ -263,19 +291,27 @@ namespace MovingTheGround
 
         void EvaluateCollision(Collision other)
         {
+            float minDot = GetMinDot(other.gameObject.layer);
+
             for (int i = 0; i < other.contactCount; i++)
             {
                 Vector3 normal = other.GetContact(i).normal;
                 float upDot = Vector3.Dot(normal, upAxis);
-                if (upDot >= GetMinDot(other.gameObject.layer))
+                if (upDot >= minDot)
                 {
                     groundContactCount += 1;
                     contactNormal += normal;
+                    connectedBody = other.rigidbody;
                 }
                 else if (upDot > -0.001f)
                 {
                     steepContactCount += 1;
                     steepNormal += normal;
+
+                    if (connectedBody == null)
+                    {
+                        connectedBody = other.rigidbody;
+                    }
                 }
             }
         }

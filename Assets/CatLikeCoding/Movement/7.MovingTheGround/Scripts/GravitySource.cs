@@ -6,7 +6,7 @@ namespace MovingTheGround
     {
         public virtual Vector3 GetGravity(Vector3 position)
         {
-            return Vector3.zero;
+            return Physics.gravity;;
         }
 
         void OnEnable()

@@ -7377,25 +7377,9 @@ MonoBehaviour:
   assetGuid: 
   m_Mesh: {fileID: 1653716633}
   m_IsSelectable: 1
-  m_SelectedFaces: 0700000020000000
-  m_SelectedEdges:
-  - a: 28
-    b: 29
-  - a: 30
-    b: 28
-  - a: 29
-    b: 31
-  - a: 31
-    b: 30
-  - a: 128
-    b: 129
-  - a: 130
-    b: 128
-  - a: 129
-    b: 131
-  - a: 131
-    b: 130
-  m_SelectedVertices: 1c0000001d0000001e0000001f00000080000000810000008200000083000000
+  m_SelectedFaces: 
+  m_SelectedEdges: []
+  m_SelectedVertices: 
 --- !u!23 &334410341
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -9378,7 +9362,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 588903755}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 65287b85c159f40e1aeef513b1b0e4cf, type: 3}
+  m_Script: {fileID: 11500000, guid: c57315deaf514804abf8d11a03729c8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!4 &588903757
@@ -9404,9 +9388,24 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
         type: 3}
+      propertyPath: jumpHeight
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
+        type: 3}
+      propertyPath: climbMask.m_Bits
+      value: 1075
+      objectReference: {fileID: 0}
+    - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
+        type: 3}
       propertyPath: playerInputSpace
       value: 
       objectReference: {fileID: 963194228}
+    - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
+        type: 3}
+      propertyPath: probeMask.m_Bits
+      value: 3107
+      objectReference: {fileID: 0}
     - target: {fileID: 1969052339480950279, guid: 837fec4301f7b974e8304158bcbe7399,
         type: 3}
       propertyPath: m_RootOrder
@@ -9746,25 +9745,9 @@ MonoBehaviour:
   assetGuid: 
   m_Mesh: {fileID: 945054745}
   m_IsSelectable: 1
-  m_SelectedFaces: 0200000001000000
-  m_SelectedEdges:
-  - a: 8
-    b: 9
-  - a: 10
-    b: 8
-  - a: 9
-    b: 11
-  - a: 11
-    b: 10
-  - a: 4
-    b: 5
-  - a: 6
-    b: 4
-  - a: 5
-    b: 7
-  - a: 7
-    b: 6
-  m_SelectedVertices: 08000000090000000a0000000b00000004000000050000000600000007000000
+  m_SelectedFaces: 
+  m_SelectedEdges: []
+  m_SelectedVertices: 
 --- !u!23 &689277934
 MeshRenderer:
   m_ObjectHideFlags: 0

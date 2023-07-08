@@ -10,11 +10,17 @@ namespace Climbing
         [SerializeField, Range(0, 100)]
         float maxSnapSpeed = 10f;
 
+        [SerializeField, Range(0, 10)]
+        float maxClimbSpeed = 2f;
+
         [SerializeField, Range(0, 100)]
-        float maxAcceleration = 10, maxAirAcfeleration = 1f;
+        float maxAcceleration = 10, maxAirAcfeleration = 1f, maxClimbAcceleration = 2f;
 
         [SerializeField, Range(0, 90)]
         float maxGroundAngle = 25f, maxStairsAngle = 50f;
+
+        [SerializeField, Range(90, 170)]
+        float maxClimbAngle = 140f;
 
         [SerializeField, Range(0, 10)]
         float jumpHeight = 2f;
@@ -23,7 +29,7 @@ namespace Climbing
         float maxAirJump = 1;
 
         [SerializeField]
-        LayerMask probeMask, stairsMask;
+        LayerMask probeMask, stairsMask, climbMask;
 
         [SerializeField, Min(0f)]
         float probeDistance = 1f;
@@ -31,11 +37,15 @@ namespace Climbing
         [SerializeField]
         Transform playerInputSpace;
 
+        [SerializeField]
+        Material normalMaterial, climbMaterial;
+
         int stepsSinceLastGrounded;
         int stepsSinceLastJump;
 
         float minGroundDotProduct;
         float minStairsDotProduct;
+        float minClimbDotProduct;
 
         int jumpPhase;
         bool desireJump;
@@ -48,8 +58,12 @@ namespace Climbing
         int steepContactCount;
         Vector3 steepNormal;
 
+        bool Climbing => climbContactCount > 0;
+        int climbContactCount;
+        Vector3 climbNormal;
+
+        Vector2 playerInput;
         Vector3 velocity;
-        Vector3 desireVelocity;
         Vector3 connectionVelocity;
 
         Vector3 connectionWorldPosition, connectionLocalPosition;
@@ -59,17 +73,21 @@ namespace Climbing
 
         Rigidbody body, connectedBody, previousConnectedBody;
 
+        MeshRenderer meshRenderer;
+
         void Start()
         {
             body = GetComponent<Rigidbody>();
+            meshRenderer = GetComponent<MeshRenderer>();
             body.useGravity = false;
             minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
             minStairsDotProduct = Mathf.Cos(maxStairsAngle * Mathf.Deg2Rad);
+            minClimbDotProduct = Mathf.Cos(maxClimbAngle * Mathf.Deg2Rad);
         }
 
         void Update()
         {
-            Vector2 playerInput = Vector2.zero;
+            playerInput = Vector2.zero;
             playerInput.x = Input.GetAxis("Horizontal");
             playerInput.y = Input.GetAxis("Vertical");
 
@@ -89,7 +107,7 @@ namespace Climbing
                 forwardAxis = ProjectOnPlane(Vector3.forward, contactNormal);
             }
 
-            desireVelocity = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
+            meshRenderer.material = Climbing ? climbMaterial : normalMaterial;
         }
 
         void FixedUpdate()
@@ -105,7 +123,11 @@ namespace Climbing
                 Jump(gravity);
             }
 
-            velocity += gravity * Time.deltaTime;
+            if (!Climbing)
+            {
+                velocity += gravity * Time.deltaTime;
+            }
+
             body.velocity = velocity;
             ClearState();
         }
@@ -116,7 +138,7 @@ namespace Climbing
             stepsSinceLastJump += 1;
             velocity = body.velocity;
 
-            if (onGround || SnapToGround() || CheckSteepContact())
+            if (CheckClimbing() || onGround || SnapToGround() || CheckSteepContact())
             {
                 stepsSinceLastGrounded = 0;
                 contactNormal.Normalize();
@@ -149,6 +171,18 @@ namespace Climbing
 
             connectionWorldPosition = body.position;
             connectionLocalPosition = connectedBody.transform.InverseTransformPoint(connectionWorldPosition);
+        }
+
+        bool CheckClimbing()
+        {
+            if (Climbing)
+            {
+                groundContactCount = climbContactCount;
+                contactNormal = climbNormal;
+                return true;
+            }
+
+            return false;
         }
 
         bool CheckSteepContact()
@@ -246,18 +280,34 @@ namespace Climbing
 
         void AdjustVelocity()
         {
-            Vector3 xAxis = ProjectOnPlane(rightAxis, contactNormal);
-            Vector3 zAxis = ProjectOnPlane(forwardAxis, contactNormal);
+            Vector3 xAxis, zAxis;
+            
+            float acceleration, speed;
+
+            if (Climbing)
+            {   
+                xAxis = Vector3.Cross(contactNormal, upAxis);
+                zAxis = upAxis;
+                acceleration = maxClimbAcceleration;
+                speed = maxClimbSpeed;
+            }
+            else 
+            {
+                xAxis = rightAxis;
+                zAxis = forwardAxis;
+                acceleration = onGround ? maxAcceleration : maxAirAcfeleration;
+                speed = maxSpeed;
+            }
+            xAxis = ProjectOnPlane(xAxis, contactNormal);
+            zAxis = ProjectOnPlane(zAxis, contactNormal);
+            float maxSpeedChange = acceleration * Time.deltaTime;
 
             Vector3 relativeVelocity = velocity - connectionVelocity;
             float currentX = Vector3.Dot(relativeVelocity, xAxis);
             float currentZ = Vector3.Dot(relativeVelocity, zAxis);
 
-            float acceleration = onGround ? maxAcceleration : maxAirAcfeleration;
-            float maxSpeedChange = acceleration * Time.deltaTime;
-
-            float newX = Mathf.MoveTowards(currentX, desireVelocity.x, maxSpeedChange);
-            float newZ = Mathf.MoveTowards(currentZ, desireVelocity.z, maxSpeedChange);
+            float newX = Mathf.MoveTowards(currentX, playerInput.x * maxSpeed, maxSpeedChange);
+            float newZ = Mathf.MoveTowards(currentZ, playerInput.y * maxSpeed, maxSpeedChange);
 
             velocity += rightAxis * (newX - currentX) + forwardAxis * (newZ - currentZ);
         }
@@ -269,6 +319,9 @@ namespace Climbing
 
             steepContactCount = 0;
             steepNormal = Vector3.zero;
+
+            climbContactCount = 0;
+            climbNormal = Vector3.zero;
 
             previousConnectedBody = connectedBody;
             connectedBody = null;
@@ -291,7 +344,8 @@ namespace Climbing
 
         void EvaluateCollision(Collision other)
         {
-            float minDot = GetMinDot(other.gameObject.layer);
+            int layer = other.gameObject.layer;
+            float minDot = GetMinDot(layer);
 
             for (int i = 0; i < other.contactCount; i++)
             {
@@ -303,13 +357,23 @@ namespace Climbing
                     contactNormal += normal;
                     connectedBody = other.rigidbody;
                 }
-                else if (upDot > -0.001f)
+                else 
                 {
-                    steepContactCount += 1;
-                    steepNormal += normal;
-
-                    if (connectedBody == null)
+                    if (upDot > -0.001f)
                     {
+                        steepContactCount += 1;
+                        steepNormal += normal;
+
+                        if (connectedBody == null)
+                        {
+                            connectedBody = other.rigidbody;
+                        }
+                    }
+
+                    if (upDot >= minClimbDotProduct && (climbMask & (1 << layer)) != 0)
+                    {
+                        climbContactCount += 1;
+                        climbNormal += normal;
                         connectedBody = other.rigidbody;
                     }
                 }

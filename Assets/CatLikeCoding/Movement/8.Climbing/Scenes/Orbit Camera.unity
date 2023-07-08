@@ -9388,8 +9388,23 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
         type: 3}
+      propertyPath: maxSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
+        type: 3}
       propertyPath: jumpHeight
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
+        type: 3}
+      propertyPath: climbMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 098ec89697c0dd54f80047a8dfddd240, type: 2}
+    - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
+        type: 3}
+      propertyPath: maxGroundAngle
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
         type: 3}
@@ -9410,6 +9425,11 @@ PrefabInstance:
         type: 3}
       propertyPath: probeMask.m_Bits
       value: 3107
+      objectReference: {fileID: 0}
+    - target: {fileID: -1878709552546162182, guid: 837fec4301f7b974e8304158bcbe7399,
+        type: 3}
+      propertyPath: maxClimbAcceleration
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 1969052339480950279, guid: 837fec4301f7b974e8304158bcbe7399,
         type: 3}

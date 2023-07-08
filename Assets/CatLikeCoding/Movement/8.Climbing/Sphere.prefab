@@ -92,7 +92,7 @@ SphereCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4868622774027354281}
-  m_Material: {fileID: 13400000, guid: 2b97fe72bc9394d4da627750e9893179, type: 2}
+  m_Material: {fileID: 13400000, guid: cfeca4a3318a2f84bad3bc916a236a7e, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -126,15 +126,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29c645552b972854c9f634de52872847, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerInputSpace: {fileID: 0}
   maxSpeed: 20
-  maxSnapSpeed: 10
+  maxClimbSpeed: 4
   maxAcceleration: 10
-  maxAirAcfeleration: 1
+  maxAirAcceleration: 1
+  maxClimbAcceleration: 40
+  jumpHeight: 2
+  maxAirJumps: 0
   maxGroundAngle: 25
   maxStairsAngle: 50
   maxClimbAngle: 140
-  jumpHeight: 2
-  maxAirJump: 1
+  maxSnapSpeed: 10
+  probeDistance: 1
   probeMask:
     serializedVersion: 2
     m_Bits: 3107
@@ -144,10 +148,8 @@ MonoBehaviour:
   climbMask:
     serializedVersion: 2
     m_Bits: 1075
-  probeDistance: 1
-  playerInputSpace: {fileID: 0}
   normalMaterial: {fileID: 2100000, guid: de34bf6486aa6b146bec3c2b96a33305, type: 2}
-  climbMaterial: {fileID: 2100000, guid: 098ec89697c0dd54f80047a8dfddd240, type: 2}
+  climbingMaterial: {fileID: 0}
 --- !u!96 &3568977342054327296
 TrailRenderer:
   serializedVersion: 2

@@ -62,6 +62,7 @@ namespace Climbing
         bool Climbing => climbContactCount > 0 && stepsSinceLastJump > 2;
         int climbContactCount;
         Vector3 climbNormal;
+        Vector3 lastClimbNormal;
 
         Vector2 playerInput;
         Vector3 velocity;
@@ -134,7 +135,6 @@ namespace Climbing
             {
                 velocity += contactNormal * (Vector3.Dot(gravity, contactNormal) * Time.deltaTime);
             }
-
             else if (desiresClimbing && OnGround)
             {
                 velocity += (gravity - contactNormal * maxAcceleration * 0.9f) * Time.deltaTime;
@@ -193,7 +193,17 @@ namespace Climbing
         {
             if (Climbing)
             {
-                groundContactCount = climbContactCount;
+                if (climbContactCount > 1)
+                {
+                    climbNormal.Normalize();
+                    float upDot = Vector3.Dot(upAxis, climbNormal);
+                    if (upDot >= minGroundDotProduct)
+                    {
+                        climbNormal = lastClimbNormal;
+                    }
+                }
+
+                groundContactCount = 1;
                 contactNormal = climbNormal;
                 return true;
             }
@@ -391,6 +401,7 @@ namespace Climbing
                     {
                         climbContactCount += 1;
                         climbNormal += normal;
+                        lastClimbNormal = normal;
                         connectedBody = other.rigidbody;
                     }
                 }

@@ -14,7 +14,7 @@ namespace Climbing
         float maxClimbSpeed = 2f;
 
         [SerializeField, Range(0, 100)]
-        float maxAcceleration = 10, maxAirAcceleration = 1f, maxClimbAcceleration = 2f;
+        float maxAcceleration = 10, maxAirAcceleration = 1f, maxClimbAcceleration = 20f;
 
         [SerializeField, Range(0, 90)]
         float maxGroundAngle = 25f, maxStairsAngle = 50f;
@@ -49,16 +49,17 @@ namespace Climbing
 
         int jumpPhase;
         bool desireJump;
+        bool desiresClimbing;
 
         bool OnGround => groundContactCount > 0;
         int groundContactCount = 0;
         Vector3 contactNormal;
 
-        bool onSteep => steepContactCount > 0;
+        bool OnSteep => steepContactCount > 0;
         int steepContactCount;
         Vector3 steepNormal;
 
-        bool Climbing => climbContactCount > 0;
+        bool Climbing => climbContactCount > 0 && stepsSinceLastJump > 2;
         int climbContactCount;
         Vector3 climbNormal;
 
@@ -92,6 +93,7 @@ namespace Climbing
             playerInput.y = Input.GetAxis("Vertical");
 
             desireJump |= Input.GetButtonDown("Jump");
+            desiresClimbing = Input.GetButton("Climb");
 
             // 将input的长度限制到1
             playerInput = Vector2.ClampMagnitude(playerInput, 1); 
@@ -123,7 +125,21 @@ namespace Climbing
                 Jump(gravity);
             }
 
-            if (!Climbing)
+            if (Climbing)
+            {
+                // 如果在墙面上移动，那么给球体一个向墙面方向掉落的速度
+                velocity -= contactNormal * (maxClimbAcceleration * 0.9f * Time.deltaTime);
+            }
+            else if (OnGround && velocity.sqrMagnitude < 0.01f)
+            {
+                velocity += contactNormal * (Vector3.Dot(gravity, contactNormal) * Time.deltaTime);
+            }
+
+            else if (desiresClimbing && OnGround)
+            {
+                velocity += (gravity - contactNormal * maxAcceleration * 0.9f) * Time.deltaTime;
+            }
+            else 
             {
                 velocity += gravity * Time.deltaTime;
             }
@@ -247,7 +263,7 @@ namespace Climbing
             {
                 jumpDirection = contactNormal;
             }
-            else if (onSteep)
+            else if (OnSteep)
             {
                 jumpDirection = steepNormal;
                 jumpPhase = 0;
@@ -292,7 +308,7 @@ namespace Climbing
             }
             else {
                 acceleration = OnGround ? maxAcceleration : maxAirAcceleration;
-                speed = OnGround ? maxSpeed : maxClimbSpeed;
+                speed = OnGround && desiresClimbing ? maxClimbSpeed : maxSpeed;
                 xAxis = rightAxis;
                 zAxis = forwardAxis;
             }
@@ -371,7 +387,7 @@ namespace Climbing
                         }
                     }
 
-                    if (upDot >= minClimbDotProduct && (climbMask & (1 << layer)) != 0)
+                    if (desiresClimbing && upDot >= minClimbDotProduct && (climbMask & (1 << layer)) != 0)
                     {
                         climbContactCount += 1;
                         climbNormal += normal;

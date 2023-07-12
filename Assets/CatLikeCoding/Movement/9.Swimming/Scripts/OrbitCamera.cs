@@ -36,6 +36,8 @@ namespace Swimming
         Vector3 focusPoint;
         Vector3 previoutFocusPoint;
         Vector2 orbitAngle = new Vector2(45, 0);
+        Quaternion orbitRotation;
+        Quaternion gravityAlignment;
 
         Camera orbitCamera;
 
@@ -54,24 +56,25 @@ namespace Swimming
         void Start()
         {
             orbitCamera = GetComponent<Camera>();
-            transform.rotation = Quaternion.Euler(orbitAngle);
+            gravityAlignment = Quaternion.identity;
+            transform.rotation = orbitRotation = Quaternion.Euler(orbitAngle);
         }
 
         void LateUpdate()
         {
+            gravityAlignment = Quaternion.FromToRotation(
+                gravityAlignment * Vector3.up, CustomGravity.GetUpAxis(focus.position)
+            ) * gravityAlignment;
+
             UpdateFocusPoint();
 
-            Quaternion lookRotation;
             if (ManualRotation() || AutoRotation())
             {
                 ConstrainAngles();
-                lookRotation = Quaternion.Euler(orbitAngle);
-            }
-            else 
-            {
-                lookRotation = transform.rotation;
+                orbitRotation = Quaternion.Euler(orbitAngle);
             }
 
+            Quaternion lookRotation = gravityAlignment * orbitRotation;
             Vector3 lookDirection = lookRotation * Vector3.forward;
             Vector3 lookPosition = focusPoint - lookDirection * distance;
 

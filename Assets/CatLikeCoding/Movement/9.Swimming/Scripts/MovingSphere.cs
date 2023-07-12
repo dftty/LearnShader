@@ -51,7 +51,9 @@ namespace Swimming
         int stepsSinceLastGrounded;
         int stepsSinceLastJump;
 
-        Vector3 rightAxis, forwardAxis;
+        Vector3 rightAxis, forwardAxis, upAxis;
+
+        Vector3 gravity;
 
         Vector3 desireVelocity;
         Vector3 velocity;
@@ -60,6 +62,7 @@ namespace Swimming
         void Awake()
         {
             body = GetComponent<Rigidbody>();
+            body.useGravity = false;
             minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
             minStairsDotProduct = Mathf.Cos(maxStairsAngle * Mathf.Deg2Rad);
         }
@@ -76,13 +79,13 @@ namespace Swimming
 
             if (playerInputSpace)
             {
-                rightAxis = playerInputSpace.right;
-                forwardAxis = playerInputSpace.forward;
+                rightAxis = ProjectOnPlane(playerInputSpace.right, upAxis);
+                forwardAxis = ProjectOnPlane(playerInputSpace.forward, upAxis);
             }
             else 
             {
-                rightAxis = Vector3.right;
-                forwardAxis = Vector3.forward;
+                rightAxis = ProjectOnPlane(Vector3.right, upAxis);
+                forwardAxis = ProjectOnPlane(Vector3.forward, upAxis);
             }
 
             desireVelocity = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
@@ -90,15 +93,18 @@ namespace Swimming
 
         void FixedUpdate()
         {
+            gravity = CustomGravity.GetGravity(transform.position, out upAxis);
+
             UpdateState();
             AdjustVelocity();
 
             if (desiredJump)
             {
                 desiredJump = false;
-                Jump();
+                Jump(gravity);
             }
 
+            velocity += gravity * Time.deltaTime;
             body.velocity = velocity;
             ClearState();
         }
@@ -121,7 +127,7 @@ namespace Swimming
             }
             else 
             {
-                contactNormal = Vector3.up;
+                contactNormal = CustomGravity.GetUpAxis(transform.position);
             }
         }
 
@@ -138,7 +144,13 @@ namespace Swimming
                 return false;
             }
 
-            if (!Physics.Raycast(transform.position, Vector3.down, out var hit, probeDistance, probeMask))
+            if (!Physics.Raycast(transform.position, -upAxis, out var hit, probeDistance, probeMask))
+            {
+                return false;
+            }
+
+            float upDot = Vector3.Dot(hit.normal, upAxis);
+            if (upDot < GetMinDot(hit.collider.gameObject.layer))
             {
                 return false;
             }
@@ -160,7 +172,8 @@ namespace Swimming
             if (steepContactCount > 1)
             {
                 steepNormal.Normalize();
-                if (steepNormal.y > minGroundDotProduct)
+                float upDot = Vector3.Dot(steepNormal, upAxis);
+                if (upDot > minGroundDotProduct)
                 {
                     groundContactCount = 1;
                     contactNormal = steepNormal;
@@ -201,7 +214,7 @@ namespace Swimming
             steepNormal = Vector3.zero;
         }
 
-        void Jump()
+        void Jump(Vector3 gravity)
         {
             Vector3 jumpDirection;
 
@@ -230,11 +243,9 @@ namespace Swimming
 
             jumpPhase += 1;
             stepsSinceLastJump = 0;
-            float jumpSpeed = Mathf.Sqrt(-2 * Physics.gravity.y * jumpHeight);
+            float jumpSpeed = Mathf.Sqrt(2 * gravity.magnitude * jumpHeight);
             float alignedSpeed = Vector3.Dot(velocity, contactNormal);
-            jumpDirection = (jumpDirection + Vector3.up).normalized;
-
-            Debug.Log(jumpDirection);
+            jumpDirection = (jumpDirection + upAxis).normalized;
 
             if (alignedSpeed > 0)
             {
@@ -261,12 +272,13 @@ namespace Swimming
             {
                 Vector3 normal = collision.GetContact(i).normal;
 
-                if (normal.y > GetMinDot(layer))
+                float upDot = Vector3.Dot(normal, upAxis);
+                if (upDot > GetMinDot(layer))
                 {
                     groundContactCount++;
                     contactNormal += normal;
                 }
-                else if (normal.y > -0.001f)
+                else if (upDot > -0.001f)
                 {
                     steepContactCount++;
                     steepNormal += normal;
@@ -277,6 +289,19 @@ namespace Swimming
         float GetMinDot(int layer)
         {
             return (stairMask & 1 << layer) == 0 ? minGroundDotProduct : minStairsDotProduct;
+        }
+
+        void OnDrawGizmos()
+        {
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.color = Color.black;
+			Gizmos.DrawLine(Vector3.zero, contactNormal);
+			Gizmos.color = Color.red;
+			Gizmos.DrawLine(Vector3.zero, rightAxis);
+			Gizmos.color = Color.yellow;
+			Gizmos.DrawLine(Vector3.zero, forwardAxis);
+			Gizmos.color = Color.cyan;
+			Gizmos.DrawLine(Vector3.zero, upAxis);
         }
     }
 }

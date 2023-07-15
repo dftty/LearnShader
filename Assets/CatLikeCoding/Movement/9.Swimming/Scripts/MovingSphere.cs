@@ -94,7 +94,7 @@ namespace Swimming
         void FixedUpdate()
         {
             gravity = CustomGravity.GetGravity(transform.position, out upAxis);
-
+            Debug.Log(gravity);
             UpdateState();
             AdjustVelocity();
 

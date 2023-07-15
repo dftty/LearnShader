@@ -8,3 +8,9 @@
   * EvaluteCollision函数
   * CheckSteepContact函数
   * SnapToGround函数
+  
+
+# 复习第六节问题
+
+* 实现重力盒外部重力时，如果盒子本身有旋转，那么计算出物体和盒子的相对位置之后，需要调用tranform.TransformDirection函数将相对位置转换为局部坐标系下的位置
+* 重力计算完成之后，还需要转换回去

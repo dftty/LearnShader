@@ -28,6 +28,9 @@ namespace Swimming
         [SerializeField, Range(0, 90)]
         float alignSmoothRange = 45f;
 
+        [SerializeField, Range(0, 360)]
+        float upAlignmentSpeed = 360;
+
         [SerializeField]
         LayerMask obstructionMask;
 
@@ -62,9 +65,7 @@ namespace Swimming
 
         void LateUpdate()
         {
-            gravityAlignment = Quaternion.FromToRotation(
-                gravityAlignment * Vector3.up, CustomGravity.GetUpAxis(focus.position)
-            ) * gravityAlignment;
+            UpdateGravityAlignment();
 
             UpdateFocusPoint();
 
@@ -92,6 +93,29 @@ namespace Swimming
             }
 
             transform.SetPositionAndRotation(lookPosition, lookRotation);
+        }
+
+        void UpdateGravityAlignment()
+        {
+            Vector3 fromUp = gravityAlignment * Vector3.up;
+            Vector3 toUp = CustomGravity.GetUpAxis(focus.position);
+
+            float dot = Mathf.Clamp(Vector3.Dot(fromUp, toUp), -1, 1);
+            float angle = Mathf.Acos(dot) * Mathf.Rad2Deg;
+            //float angle = Quaternion.Angle(gravityAlignment, newAligment);
+
+            float maxAngle = upAlignmentSpeed * Time.deltaTime;
+            Quaternion newAligment = Quaternion.FromToRotation(fromUp, toUp) * gravityAlignment;
+
+
+            if (angle < maxAngle)
+            {
+                gravityAlignment = newAligment;
+            }            
+            else 
+            {
+                gravityAlignment = Quaternion.SlerpUnclamped(gravityAlignment, newAligment, maxAngle / angle);
+            }
         }
 
         bool ManualRotation()

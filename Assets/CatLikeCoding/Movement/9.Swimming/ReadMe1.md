@@ -14,3 +14,8 @@
 
 * 实现重力盒外部重力时，如果盒子本身有旋转，那么计算出物体和盒子的相对位置之后，需要调用tranform.TransformDirection函数将相对位置转换为局部坐标系下的位置
 * 重力计算完成之后，还需要转换回去
+
+# 复习第七节问题
+
+* 在EvaluateCollision中，应该优先使用地面连接物体作为connectedBody，如果没有地面连接物体，再使用其他连接物体
+* UpdateConnectionVelocity函数中，记录物体位置和物体相对于移动平面的位置。

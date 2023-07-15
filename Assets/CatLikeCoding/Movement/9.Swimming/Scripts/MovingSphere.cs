@@ -10,14 +10,20 @@ namespace Swimming
         [SerializeField, Range(0, 100)]
         float maxSnapSpeed = 10;
 
+        [SerializeField]
+        float maxClimbSpeed = 2;
+
         [SerializeField, Range(0, 100)]
-        float maxAcceleration = 20, maxAirAcceleration = 2;
+        float maxAcceleration = 20, maxAirAcceleration = 2, maxClimbAcceleration = 10;
 
         [SerializeField, Range(0, 90)]
         float maxGroundAngle = 40;
 
         [SerializeField, Range(0, 90)]
         float maxStairsAngle = 50;
+
+        [SerializeField, Range(90, 170)]
+        float maxClimbAngle = 140;
 
         [SerializeField, Range(0, 10)]
         float jumpHeight = 3f;
@@ -29,13 +35,17 @@ namespace Swimming
         float probeDistance = 1;
 
         [SerializeField]
-        LayerMask probeMask, stairMask;
+        LayerMask probeMask, stairMask, climbMask;
 
         [SerializeField]
         Transform playerInputSpace;
 
+        [SerializeField]
+        Material normalMaterial, climbMaterila;
+
         float minGroundDotProduct;
         float minStairsDotProduct;
+        float minClimbDotProduct;
 
         bool OnGround => groundContactCount > 0;
         int groundContactCount;
@@ -45,6 +55,11 @@ namespace Swimming
         int steepContactCount;
         Vector3 steepNormal;
 
+        bool Climbing => climbContactCount > 0 && stepsSinceLastJump > 2;
+        int climbContactCount;
+        Vector3 climbNormal;
+
+        bool desireClimbing;
         bool desiredJump;
         int jumpPhase;
 
@@ -55,9 +70,13 @@ namespace Swimming
 
         Vector3 gravity;
 
+        Vector2 playerInput;
         Vector3 desireVelocity;
         Vector3 velocity;
-        Rigidbody body;
+        Vector3 connectionBodyVelocity;
+        Rigidbody body, connectedBody, previoutConnectedBody;
+
+        Vector3 connectionWorldPosition, connectionLocalPosition;
 
         void Awake()
         {
@@ -65,15 +84,16 @@ namespace Swimming
             body.useGravity = false;
             minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
             minStairsDotProduct = Mathf.Cos(maxStairsAngle * Mathf.Deg2Rad);
+            minClimbDotProduct = Mathf.Cos(maxClimbAngle * Mathf.Deg2Rad);
         }
 
         void Update()
         {
-            Vector2 playerInput;
             playerInput.x = Input.GetAxis("Horizontal");
             playerInput.y = Input.GetAxis("Vertical");
 
             desiredJump |= Input.GetButtonDown("Jump");
+            desireClimbing = Input.GetButton("Climb");
 
             playerInput = Vector2.ClampMagnitude(playerInput, 1);
 
@@ -88,13 +108,12 @@ namespace Swimming
                 forwardAxis = ProjectOnPlane(Vector3.forward, upAxis);
             }
 
-            desireVelocity = new Vector3(playerInput.x, 0, playerInput.y) * maxSpeed;
+            GetComponent<MeshRenderer>().material = Climbing ? climbMaterila : normalMaterial;
         }
 
         void FixedUpdate()
         {
             gravity = CustomGravity.GetGravity(transform.position, out upAxis);
-            Debug.Log(gravity);
             UpdateState();
             AdjustVelocity();
 
@@ -104,7 +123,20 @@ namespace Swimming
                 Jump(gravity);
             }
 
-            velocity += gravity * Time.deltaTime;
+            if (Climbing)
+            {
+                // 这里如果没有0.9，那么会在爬内角墙时卡住
+                velocity -= contactNormal * (maxClimbAcceleration * 0.9f * Time.deltaTime);
+            }
+            else if (desireClimbing && OnGround)
+            {
+                velocity += ((gravity - contactNormal) * maxClimbAcceleration * 0.9f) * Time.deltaTime;
+            }
+            else 
+            {
+                velocity += gravity * Time.deltaTime;
+            }
+            
             body.velocity = velocity;
             ClearState();
         }
@@ -115,7 +147,7 @@ namespace Swimming
             stepsSinceLastGrounded++;
             stepsSinceLastJump++;
 
-            if (OnGround || SnapToGround() || CheckSteepContact())
+            if (CheckClimb() || OnGround || SnapToGround() || CheckSteepContact())
             {
                 stepsSinceLastGrounded = 0;
                 contactNormal.Normalize();
@@ -129,6 +161,39 @@ namespace Swimming
             {
                 contactNormal = CustomGravity.GetUpAxis(transform.position);
             }
+
+            if (connectedBody)
+            {
+                if (connectedBody.isKinematic && connectedBody.mass >= body.mass)
+                {
+                    UpdateConnectedBodyVelocity();
+                }
+            }
+        }
+
+        bool CheckClimb()
+        {
+            if (Climbing)
+            {
+                groundContactCount = climbContactCount;
+                contactNormal = climbNormal;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        void UpdateConnectedBodyVelocity()
+        {
+            if (previoutConnectedBody == connectedBody)
+            {
+                Vector3 pos = connectedBody.transform.TransformPoint(connectionLocalPosition) - connectionWorldPosition;
+                connectionBodyVelocity = pos / Time.deltaTime;
+            }
+
+            connectionWorldPosition = body.position;
+            connectionLocalPosition = connectedBody.transform.InverseTransformPoint(connectionWorldPosition);
         }
 
         bool SnapToGround()
@@ -164,6 +229,7 @@ namespace Swimming
                 velocity = (velocity - contactNormal * dot).normalized * speed;
             }
 
+            connectedBody = hit.rigidbody;
             return true;
         }
 
@@ -185,17 +251,37 @@ namespace Swimming
 
         void AdjustVelocity()
         {
-            Vector3 xAxis = ProjectOnPlane(rightAxis, contactNormal);
-            Vector3 zAxis = ProjectOnPlane(forwardAxis, contactNormal);
+            Vector3 xAxis;
+            Vector3 zAxis;
 
-            float currentX = Vector3.Dot(velocity, xAxis);
-            float currentZ = Vector3.Dot(velocity, zAxis);
+            float acceleration, speed;
+            if (Climbing)
+            {
+                xAxis = Vector3.Cross(contactNormal, upAxis);
+                zAxis = upAxis;
+                acceleration = maxClimbAcceleration;
+                speed = maxClimbSpeed;
+            }
+            else 
+            {
+                xAxis = rightAxis;
+                zAxis = forwardAxis;
+                acceleration = OnGround ? maxAcceleration : maxAirAcceleration;
+                speed = OnGround && desireClimbing ? maxClimbSpeed : maxSpeed;
+            }
 
-            float acceleration = OnGround ? maxAcceleration : maxAirAcceleration;
+            xAxis = ProjectOnPlane(xAxis, contactNormal);
+            zAxis = ProjectOnPlane(zAxis, contactNormal);
             float maxSpeedChange = acceleration * Time.deltaTime;
 
-            float newX = Mathf.MoveTowards(currentX, desireVelocity.x, maxSpeedChange);
-            float newZ = Mathf.MoveTowards(currentZ, desireVelocity.z, maxSpeedChange);
+            Vector3 relativeVelocity = velocity - connectionBodyVelocity;
+            float currentX = Vector3.Dot(relativeVelocity, xAxis);
+            float currentZ = Vector3.Dot(relativeVelocity, zAxis);
+
+            float newX = Mathf.MoveTowards(currentX, playerInput.x * speed, maxSpeedChange);
+            float newZ = Mathf.MoveTowards(currentZ, playerInput.y * speed, maxSpeedChange);
+
+            Debug.Log(playerInput);
 
             velocity += (newX - currentX) * xAxis + (newZ - currentZ) * zAxis;
         }
@@ -212,6 +298,12 @@ namespace Swimming
 
             steepContactCount = 0;
             steepNormal = Vector3.zero;
+
+            climbContactCount = 0;
+            climbNormal = Vector3.zero;
+
+            previoutConnectedBody = connectedBody;
+            connectedBody = null;
         }
 
         void Jump(Vector3 gravity)
@@ -277,11 +369,26 @@ namespace Swimming
                 {
                     groundContactCount++;
                     contactNormal += normal;
+                    connectedBody = collision.rigidbody;
                 }
-                else if (upDot > -0.001f)
+                else 
                 {
-                    steepContactCount++;
-                    steepNormal += normal;
+                    if (upDot > -0.001f)
+                    {
+                        steepContactCount++;
+                        steepNormal += normal;
+
+                        if (connectedBody == null)
+                        {
+                            connectedBody = collision.rigidbody;
+                        }
+                    }
+
+                    if (desireClimbing && upDot > minClimbDotProduct && (climbMask & (1 << layer)) != 0)
+                    {
+                        climbContactCount++;
+                        climbNormal += normal;
+                    }
                 }
             }
         }

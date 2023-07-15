@@ -9362,7 +9362,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 588903755}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c57315deaf514804abf8d11a03729c8e, type: 3}
+  m_Script: {fileID: 11500000, guid: 18f0d7cb70f0e614d9068ab7661758c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!4 &588903757
@@ -9390,6 +9390,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Sphere
+      objectReference: {fileID: 0}
+    - target: {fileID: 6550692818049228777, guid: b872a5ff39e966649aa62f35a0a8c779,
+        type: 3}
+      propertyPath: climbMaterila
+      value: 
+      objectReference: {fileID: 2100000, guid: 098ec89697c0dd54f80047a8dfddd240, type: 2}
+    - target: {fileID: 6550692818049228777, guid: b872a5ff39e966649aa62f35a0a8c779,
+        type: 3}
+      propertyPath: normalMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: de34bf6486aa6b146bec3c2b96a33305, type: 2}
+    - target: {fileID: 6550692818049228777, guid: b872a5ff39e966649aa62f35a0a8c779,
+        type: 3}
+      propertyPath: climbMask.m_Bits
+      value: 2355
       objectReference: {fileID: 0}
     - target: {fileID: 6550692818049228777, guid: b872a5ff39e966649aa62f35a0a8c779,
         type: 3}
@@ -12162,6 +12177,7 @@ MonoBehaviour:
   maxVerticalAngle: 70
   delayTime: 5
   alignSmoothRange: 45
+  upAlignmentSpeed: 360
   obstructionMask:
     serializedVersion: 2
     m_Bits: 3635

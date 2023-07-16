@@ -13,8 +13,11 @@ namespace Swimming
         [SerializeField]
         float maxClimbSpeed = 2;
 
+        [SerializeField]
+        float maxSwimSpeed = 5f;
+
         [SerializeField, Range(0, 100)]
-        float maxAcceleration = 20, maxAirAcceleration = 2, maxClimbAcceleration = 10;
+        float maxAcceleration = 20, maxAirAcceleration = 2, maxClimbAcceleration = 10, maxSwimAcceleration = 5f;
 
         [SerializeField, Range(0, 90)]
         float maxGroundAngle = 40;
@@ -35,13 +38,34 @@ namespace Swimming
         float probeDistance = 1;
 
         [SerializeField]
-        LayerMask probeMask, stairMask, climbMask;
+        LayerMask probeMask, stairMask, climbMask, waterMask;
 
         [SerializeField]
         Transform playerInputSpace;
 
         [SerializeField]
-        Material normalMaterial, climbMaterila;
+        Material normalMaterial, climbMaterila, swimMaterial;
+
+        [SerializeField]
+        float submergeOffset = 0.5f;
+
+        [SerializeField]
+        float submergeRange = 1f;   
+
+        // 水阻力系数
+        [SerializeField, Range(0, 10f)]
+        float waterDrag = 1f;
+
+        // 浮力系数
+        [SerializeField, Min(0f)]
+        float buoyancy = 1;
+
+        [SerializeField, Range(0.01f, 1)]
+        float swimThreshold = 0.5f;
+
+        bool InWater => submerge > 0;
+        float submerge;
+        bool Swimming => submerge >= swimThreshold;
 
         float minGroundDotProduct;
         float minStairsDotProduct;
@@ -59,7 +83,7 @@ namespace Swimming
         int climbContactCount;
         Vector3 climbNormal;
 
-        bool desireClimbing;
+        bool desiresClimbing;
         bool desiredJump;
         int jumpPhase;
 
@@ -70,10 +94,10 @@ namespace Swimming
 
         Vector3 gravity;
 
-        Vector2 playerInput;
+        Vector3 playerInput;
         Vector3 desireVelocity;
         Vector3 velocity;
-        Vector3 connectionBodyVelocity;
+        Vector3 connectionVelocity;
         Rigidbody body, connectedBody, previoutConnectedBody;
 
         Vector3 connectionWorldPosition, connectionLocalPosition;
@@ -91,11 +115,19 @@ namespace Swimming
         {
             playerInput.x = Input.GetAxis("Horizontal");
             playerInput.y = Input.GetAxis("Vertical");
+            playerInput.z = Swimming ? Input.GetAxis("UpDown") : 0;
 
-            desiredJump |= Input.GetButtonDown("Jump");
-            desireClimbing = Input.GetButton("Climb");
+            if (Swimming)
+            {
+                desiresClimbing = false;
+            }
+            else 
+            {
+                desiredJump |= Input.GetButtonDown("Jump");
+                desiresClimbing = Input.GetButton("Climb");
+            }
 
-            playerInput = Vector2.ClampMagnitude(playerInput, 1);
+            playerInput = Vector3.ClampMagnitude(playerInput, 1);
 
             if (playerInputSpace)
             {
@@ -108,13 +140,19 @@ namespace Swimming
                 forwardAxis = ProjectOnPlane(Vector3.forward, upAxis);
             }
 
-            GetComponent<MeshRenderer>().material = Climbing ? climbMaterila : normalMaterial;
+            GetComponent<MeshRenderer>().material = Climbing ? climbMaterila : Swimming ? swimMaterial : normalMaterial;
         }
 
         void FixedUpdate()
         {
             gravity = CustomGravity.GetGravity(transform.position, out upAxis);
             UpdateState();
+
+            if (InWater)
+            {
+                velocity *= 1 - waterDrag * submerge * Time.deltaTime;
+            }
+
             AdjustVelocity();
 
             if (desiredJump)
@@ -128,9 +166,14 @@ namespace Swimming
                 // 这里如果没有0.9，那么会在爬内角墙时卡住
                 velocity -= contactNormal * (maxClimbAcceleration * 0.9f * Time.deltaTime);
             }
-            else if (desireClimbing && OnGround)
+            else if (InWater)
             {
-                velocity += ((gravity - contactNormal) * maxClimbAcceleration * 0.9f) * Time.deltaTime;
+                velocity += gravity * ((1 - buoyancy * submerge) * Time.deltaTime);
+            }
+            else if (desiresClimbing && OnGround)
+            {
+                // 这里是当在爬墙时，要冲出墙面到达地面时，给物体一个倾向于平面移动的力，否则物体会掉下去
+                velocity += (gravity - contactNormal * maxClimbAcceleration * 0.9f) * Time.deltaTime;
             }
             else 
             {
@@ -147,7 +190,7 @@ namespace Swimming
             stepsSinceLastGrounded++;
             stepsSinceLastJump++;
 
-            if (CheckClimb() || OnGround || SnapToGround() || CheckSteepContact())
+            if (CheckClimb() || CheckSwimming() || OnGround || SnapToGround() || CheckSteepContact())
             {
                 stepsSinceLastGrounded = 0;
                 contactNormal.Normalize();
@@ -171,6 +214,18 @@ namespace Swimming
             }
         }
 
+        bool CheckSwimming()
+        {
+            if (Swimming)
+            {
+                groundContactCount = 0;
+                contactNormal = upAxis;
+                return true;
+            }
+
+            return false;
+        }
+
         bool CheckClimb()
         {
             if (Climbing)
@@ -189,7 +244,7 @@ namespace Swimming
             if (previoutConnectedBody == connectedBody)
             {
                 Vector3 pos = connectedBody.transform.TransformPoint(connectionLocalPosition) - connectionWorldPosition;
-                connectionBodyVelocity = pos / Time.deltaTime;
+                connectionVelocity = pos / Time.deltaTime;
             }
 
             connectionWorldPosition = body.position;
@@ -209,7 +264,7 @@ namespace Swimming
                 return false;
             }
 
-            if (!Physics.Raycast(transform.position, -upAxis, out var hit, probeDistance, probeMask))
+            if (!Physics.Raycast(transform.position, -upAxis, out var hit, probeDistance, probeMask, QueryTriggerInteraction.Ignore))
             {
                 return false;
             }
@@ -262,28 +317,42 @@ namespace Swimming
                 acceleration = maxClimbAcceleration;
                 speed = maxClimbSpeed;
             }
+            else if (Swimming)
+            {
+                // 当在水中时，如果没有完全进入水下，那么加速度应该在地面加速度和水下加速度之间
+                float swimFactor = Mathf.Min(1, submerge / swimThreshold);
+                xAxis = rightAxis;
+                zAxis = forwardAxis;
+                speed = Mathf.LerpUnclamped(maxSpeed, maxSwimSpeed, swimFactor);
+                acceleration = Mathf.LerpUnclamped(OnGround ? maxAcceleration : maxAirAcceleration, maxSwimAcceleration, swimFactor);
+            }
             else 
             {
                 xAxis = rightAxis;
                 zAxis = forwardAxis;
                 acceleration = OnGround ? maxAcceleration : maxAirAcceleration;
-                speed = OnGround && desireClimbing ? maxClimbSpeed : maxSpeed;
+                speed = OnGround && desiresClimbing ? maxClimbSpeed : maxSpeed;
             }
 
             xAxis = ProjectOnPlane(xAxis, contactNormal);
             zAxis = ProjectOnPlane(zAxis, contactNormal);
             float maxSpeedChange = acceleration * Time.deltaTime;
 
-            Vector3 relativeVelocity = velocity - connectionBodyVelocity;
+            Vector3 relativeVelocity = velocity - connectionVelocity;
             float currentX = Vector3.Dot(relativeVelocity, xAxis);
             float currentZ = Vector3.Dot(relativeVelocity, zAxis);
 
             float newX = Mathf.MoveTowards(currentX, playerInput.x * speed, maxSpeedChange);
             float newZ = Mathf.MoveTowards(currentZ, playerInput.y * speed, maxSpeedChange);
 
-            Debug.Log(playerInput);
-
             velocity += (newX - currentX) * xAxis + (newZ - currentZ) * zAxis;
+
+            if (Swimming)
+            {
+                float currentY = Vector3.Dot(relativeVelocity, upAxis);
+                float newY = Mathf.MoveTowards(currentY, playerInput.z * speed, maxSpeedChange);
+                velocity += (newY - currentY) * upAxis;
+            }
         }
 
         Vector3 ProjectOnPlane(Vector3 vec, Vector3 normal)
@@ -304,6 +373,8 @@ namespace Swimming
 
             previoutConnectedBody = connectedBody;
             connectedBody = null;
+
+            submerge = 0;
         }
 
         void Jump(Vector3 gravity)
@@ -336,6 +407,12 @@ namespace Swimming
             jumpPhase += 1;
             stepsSinceLastJump = 0;
             float jumpSpeed = Mathf.Sqrt(2 * gravity.magnitude * jumpHeight);
+
+            if (InWater)
+            {
+                jumpSpeed *= Mathf.Max(0, 1f - submerge / swimThreshold);
+            }
+
             float alignedSpeed = Vector3.Dot(velocity, contactNormal);
             jumpDirection = (jumpDirection + upAxis).normalized;
 
@@ -345,6 +422,42 @@ namespace Swimming
             }
 
             velocity += jumpDirection * jumpSpeed;
+        }
+
+        void OnTriggerEnter(Collider other) 
+        {
+            if ((waterMask & 1 << other.gameObject.layer) != 0)
+            {
+                EvaluateSubmerge(other);
+            }
+        }
+
+        void OnTriggerStay(Collider other) 
+        {
+            if ((waterMask & 1 << other.gameObject.layer) != 0)
+            {
+                EvaluateSubmerge(other);
+            }
+        }
+
+        void EvaluateSubmerge(Collider other)
+        {
+            if (Physics.Raycast(
+                body.position + upAxis * submergeOffset, 
+                -upAxis, out var hit, submergeRange + 1, 
+                waterMask, QueryTriggerInteraction.Collide))
+            {
+                submerge = 1 - hit.distance / submergeRange;
+            }
+            else 
+            {
+                submerge = 1;
+            }
+
+            if (Swimming)
+            {
+                connectedBody = other.attachedRigidbody;
+            }
         }
 
         void  OnCollisionEnter(Collision other) 
@@ -359,6 +472,11 @@ namespace Swimming
 
         void EvaluteCollision(Collision collision)
         {
+            if (Swimming)
+            {
+                return ;
+            }
+
             int layer = collision.gameObject.layer;
             for (int i = 0; i < collision.contactCount; i++)
             {
@@ -384,7 +502,7 @@ namespace Swimming
                         }
                     }
 
-                    if (desireClimbing && upDot > minClimbDotProduct && (climbMask & (1 << layer)) != 0)
+                    if (desiresClimbing && upDot > minClimbDotProduct && (climbMask & (1 << layer)) != 0)
                     {
                         climbContactCount++;
                         climbNormal += normal;
@@ -408,7 +526,7 @@ namespace Swimming
 			Gizmos.color = Color.yellow;
 			Gizmos.DrawLine(Vector3.zero, forwardAxis);
 			Gizmos.color = Color.cyan;
-			Gizmos.DrawLine(Vector3.zero, upAxis);
+			//Gizmos.DrawLine(Vector3.zero, upAxis);
         }
     }
 }

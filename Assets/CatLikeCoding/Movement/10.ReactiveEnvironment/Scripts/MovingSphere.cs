@@ -177,6 +177,11 @@ namespace ReactiveEnvironment
 			ClearState();
 		}
 
+		public void PreventSnapToGround()
+		{
+			stepsSinceLastJump = -1;
+		}
+
 		void ClearState () {
 			groundContactCount = steepContactCount = climbContactCount = 0;
 			contactNormal = steepNormal = climbNormal = Vector3.zero;

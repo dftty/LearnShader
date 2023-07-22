@@ -4767,7 +4767,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gravity: -9.81
-  boundaryDistance: {x: 10, y: 10, z: 10}
+  boundaryDistance: {x: 8, y: 8, z: 8}
   innerDistance: 3
   innerFalloffDistance: 6
   outerDistance: 2

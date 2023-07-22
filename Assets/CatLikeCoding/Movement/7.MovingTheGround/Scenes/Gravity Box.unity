@@ -317,8 +317,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5fbc3a0b445fd3247b0ff43c44d7fa1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gravity: 9.81
-  boundaryDistance: {x: 10, y: 10, z: 10}
+  gravity: -9.81
+  boundaryDistance: {x: 8, y: 8, z: 8}
   innerDistance: 3
   innerFalloffDistance: 6
   outerDistance: 2

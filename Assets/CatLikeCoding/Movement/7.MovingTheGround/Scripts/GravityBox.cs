@@ -124,7 +124,7 @@ namespace MovingTheGround
                 g *= 1 - (distance - innerDistance) * innerFalloffFactor;
             }
 
-            return coordinate > 0 ? g : -g;
+            return coordinate > 0 ? -g : g;
         }
 
         void OnDrawGizmos()

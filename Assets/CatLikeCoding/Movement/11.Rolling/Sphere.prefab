@@ -224,12 +224,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c10d2534c7f81d4cafcac3a2a753b6c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputSpace: {fileID: 0}
   maxSpeed: 10
   maxSnapSpeed: 20
+  maxClimbSpeed: 5
+  maxSwimSpeed: 5
   maxAcceleration: 20
   maxAirAcceleration: 2
+  maxClimbAcceleration: 10
+  maxSwimAcceleration: 5
   maxGroundAngle: 40
   maxStairAngle: 50
+  maxClimbAngle: 140
   jumpHeight: 2
   maxAirJump: 0
   probeDistance: 1
@@ -239,3 +245,9 @@ MonoBehaviour:
   stairsMask:
     serializedVersion: 2
     m_Bits: 1024
+  climbMask:
+    serializedVersion: 2
+    m_Bits: 5155
+  waterMask:
+    serializedVersion: 2
+    m_Bits: 16

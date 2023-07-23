@@ -86,8 +86,6 @@ namespace Rolling
             {
                 rectPosition = castFrom + castDirection * hit.distance;
                 lookPosition = rectPosition - rectOffset;
-
-                Debug.Log(hit.distance);
             }
 
             transform.SetPositionAndRotation(lookPosition, lookRotation);

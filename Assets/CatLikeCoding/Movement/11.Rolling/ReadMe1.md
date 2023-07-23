@@ -4,3 +4,7 @@
 ```cs
 Quaternion lookRotation = gravityAligment * orbitRotation
 ```
+
+# 复习第八节问题
+
+* 当角色在爬墙时，跨过一个凸90度墙角，如果当前爬行加速度过小，而爬行速度又过大的话，会导致角色掉下来，而不是爬到另一个墙上

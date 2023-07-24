@@ -23,13 +23,13 @@ namespace Rolling
         float alignSmoothRange = 45f;
 
         [SerializeField]
-        float delayTime = 5f;
+        float alignDelay = 5f;
 
         [SerializeField, Range(-45, 90)]
         float minVerticalAngle = -20f, maxVerticalAngle = 70f;
 
         [SerializeField]
-        LayerMask probeMask;
+        LayerMask obstructionMask;
 
         [SerializeField]
         float upAlignmentSpeed = 360f;
@@ -38,7 +38,7 @@ namespace Rolling
         Quaternion orbitRotation;
 
         Vector3 focusPoint, previousFocusPoint;
-        Vector2 orbitAngle = new Vector2(45, 0);
+        Vector2 orbitAngles = new Vector2(45, 0);
         float lastManualRotationTime;
 
         Camera orbitCamera;
@@ -57,7 +57,7 @@ namespace Rolling
         void Awake()
         {
             orbitCamera = GetComponent<Camera>();
-            transform.rotation = orbitRotation = Quaternion.Euler(orbitAngle);
+            transform.rotation = orbitRotation = Quaternion.Euler(orbitAngles);
         }
 
         void LateUpdate()
@@ -68,7 +68,7 @@ namespace Rolling
             if (ManualRotation() || AutoRotation())
             {
                 ConstrainAngles();
-                orbitRotation = Quaternion.Euler(orbitAngle);
+                orbitRotation = Quaternion.Euler(orbitAngles);
             }
 
             Quaternion lookRotation = gravityAlignment * orbitRotation;
@@ -82,7 +82,7 @@ namespace Rolling
             float castDistance = castLine.magnitude;
             Vector3 castDirection = castLine.normalized;
 
-            if (Physics.BoxCast(castFrom, CameraHalfExtends, castDirection, out var hit, lookRotation, castDistance, probeMask, QueryTriggerInteraction.Ignore))
+            if (Physics.BoxCast(castFrom, CameraHalfExtends, castDirection, out var hit, lookRotation, castDistance, obstructionMask, QueryTriggerInteraction.Ignore))
             {
                 rectPosition = castFrom + castDirection * hit.distance;
                 lookPosition = rectPosition - rectOffset;
@@ -137,15 +137,15 @@ namespace Rolling
 
         void ConstrainAngles()
         {
-            orbitAngle.x = Mathf.Clamp(orbitAngle.x, minVerticalAngle, maxVerticalAngle);
+            orbitAngles.x = Mathf.Clamp(orbitAngles.x, minVerticalAngle, maxVerticalAngle);
 
-            if (orbitAngle.y >= 360f)
+            if (orbitAngles.y >= 360f)
             {
-                orbitAngle.y -= 360f;
+                orbitAngles.y -= 360f;
             }
-            else if (orbitAngle.y <= 0)
+            else if (orbitAngles.y < 0)
             {
-                orbitAngle.y += 360f;
+                orbitAngles.y += 360f;
             }
         }
 
@@ -159,7 +159,7 @@ namespace Rolling
             const float e = 0.0001f;
             if (input.x < -e || input.x > e || input.y < -e || input.y > e)
             {
-                orbitAngle += input * rotationSpeed * Time.deltaTime;
+                orbitAngles += input * rotationSpeed * Time.deltaTime;
                 lastManualRotationTime = Time.unscaledTime;
                 return true;
             }
@@ -169,25 +169,27 @@ namespace Rolling
 
         bool AutoRotation()
         {
-            if (Time.unscaledTime - lastManualRotationTime < delayTime)
+            if (Time.unscaledTime - lastManualRotationTime < alignDelay)
             {
                 return false;
             }
 
-            Vector2 movement = new Vector2(
-                focusPoint.x - previousFocusPoint.x,
-                focusPoint.z - previousFocusPoint.z
-            );
+            Vector3 alignedDelta =
+			    Quaternion.Inverse(gravityAlignment) *
+			    (focusPoint - previousFocusPoint);
+            
+		    Vector2 movement = new Vector2(alignedDelta.x, alignedDelta.z);
 
-            float magnitude = movement.magnitude;
-            if (magnitude < 0.0001f)
+            float movementDeltaSqr = movement.sqrMagnitude;
+            if (movementDeltaSqr < 0.0001f) 
             {
                 return false;
             }
 
             float headingAngle = GetAngle(movement.normalized);
-            float deltaAngle = Mathf.Abs(Mathf.DeltaAngle(headingAngle, orbitAngle.y));
-            float rotationChange = rotationSpeed * Time.unscaledDeltaTime;
+            float deltaAngle = Mathf.Abs(Mathf.DeltaAngle(headingAngle, orbitAngles.y));
+            float rotationChange =
+			    rotationSpeed * Mathf.Min(Time.unscaledDeltaTime, movementDeltaSqr);
 
             if (deltaAngle < alignSmoothRange)
             {
@@ -198,14 +200,14 @@ namespace Rolling
                 rotationChange *= (180 - deltaAngle) / alignSmoothRange;
             }
 
-            orbitAngle.y = Mathf.MoveTowardsAngle(deltaAngle, headingAngle, rotationChange);
+            orbitAngles.y = Mathf.MoveTowardsAngle(orbitAngles.y, headingAngle, rotationChange);
             return true;
         }
 
         float GetAngle(Vector2 direction)
         {
             float angle = Mathf.Acos(direction.y) * Mathf.Rad2Deg;
-            return direction.x > 0 ? angle : 180 - angle;
+            return direction.x > 0 ? angle : 360 - angle;
         }
     }
 }

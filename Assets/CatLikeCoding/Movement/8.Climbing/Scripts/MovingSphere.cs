@@ -422,7 +422,7 @@ namespace Climbing
 
 			Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.color = Color.black;
-			Gizmos.DrawLine(Vector3.zero, contactNormal);
+			Gizmos.DrawLine(Vector3.zero, climbNormal);
 			Gizmos.color = Color.red;
 			Gizmos.DrawLine(Vector3.zero, rightAxis);
 			Gizmos.color = Color.yellow;

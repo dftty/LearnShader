@@ -5,7 +5,7 @@ namespace Rolling
     public class MovingSphere : MonoBehaviour
     {   
         [SerializeField]
-        Transform inputSpace;
+        Transform inputSpace, ball;
 
         [SerializeField, Range(0, 20)]
         float maxSpeed = 10, maxSnapSpeed = 20, maxClimbSpeed = 5, maxSwimSpeed = 5f;
@@ -47,13 +47,21 @@ namespace Rolling
         [SerializeField, Range(0.01f, 1)]
         float swimThreshold = 0.5f;
 
+        [SerializeField, Min(0.1f)]
+        float ballRadius = 0.5f;
+
+        [SerializeField, Min(0)]
+        float ballAlignmentSpeed = 180f;
+
         bool OnGround => groundedContactCount > 0;
         int groundedContactCount;
         Vector3 contactNormal;
+        Vector3 lastContactNormal;
 
         bool OnSteep => steepContactCount > 0;
         int steepContactCount;
         Vector3 steepNormal;
+        Vector3 lastSteepNormal;
 
         bool Climbing => climbContactCount > 0 && stepsSinceLastJump > 2;
         int climbContactCount;
@@ -67,6 +75,7 @@ namespace Rolling
 
         Vector3 velocity;
         Vector3 connectionVelocity;
+        Vector3 lastConnectionVelocity;
 
         Vector3 connectionWorldPosition, connectionLocalPosition;
 
@@ -97,8 +106,8 @@ namespace Rolling
         void Update()
         {
             playerInput.x = Input.GetAxis("Horizontal");
-            playerInput.y = Input.GetAxis("Vertical");
-            playerInput.z = Swimming ? Input.GetAxis("UpDown") : 0;
+            playerInput.z = Input.GetAxis("Vertical");
+            playerInput.y = Swimming ? Input.GetAxis("UpDown") : 0;
 
 
             if (Swimming)
@@ -111,17 +120,79 @@ namespace Rolling
                 desiresClimbing = Input.GetButton("Climb");
             }
 
-            playerInput = Vector2.ClampMagnitude(playerInput, 1);
+            playerInput = Vector3.ClampMagnitude(playerInput, 1);
 
-            if (inputSpace)
+            if (inputSpace) {
+                rightAxis = ProjectOnPlane(inputSpace.right, upAxis);
+                forwardAxis =
+                    ProjectOnPlane(inputSpace.forward, upAxis);
+            }
+            else {
+                rightAxis = ProjectOnPlane(Vector3.right, upAxis);
+                forwardAxis = ProjectOnPlane(Vector3.forward, upAxis);
+            }
+
+            UpdateBall();
+        }
+
+        void UpdateBall()
+        {
+            Vector3 movement = (body.velocity - lastConnectionVelocity) * Time.deltaTime;
+
+            Vector3 rotationPlaneNormal = lastContactNormal;
+            if (!OnGround)
             {
-                rightAxis = inputSpace.right;
-                forwardAxis = inputSpace.forward;
+                if (OnSteep)
+                {
+                    rotationPlaneNormal = lastSteepNormal;
+                }
+            }
+
+            movement -= rotationPlaneNormal * Vector3.Dot(movement, rotationPlaneNormal);
+            float distance = movement.magnitude;
+
+            Quaternion rotation = ball.localRotation;
+            if (connectedBody && connectedBody == previousConnectedBody)
+            {
+                rotation = Quaternion.Euler(connectedBody.angularVelocity * Mathf.Rad2Deg * Time.deltaTime) * rotation;
+
+                if (distance < 0.001f)
+                {
+                    ball.localRotation = rotation;
+                    return ;
+                }
+            }
+            else if (distance < 0.001f)
+            {
+                return ;
+            }
+
+            float angle = distance * (180f / Mathf.PI) / ballRadius;
+            Vector3 rotationAxis = Vector3.Cross(rotationPlaneNormal, movement).normalized;
+
+            rotation = Quaternion.Euler(rotationAxis * angle) * rotation;
+            if (ballAlignmentSpeed > 0)
+            {
+                rotation = AlignBallRotation(rotationAxis, rotation, distance);
+            }
+            ball.localRotation = rotation;
+        }
+
+        Quaternion AlignBallRotation(Vector3 rotationAxis, Quaternion rotation, float distance)
+        {
+            Vector3 ballAxis = ball.up;
+            float dot = Mathf.Clamp(Vector3.Dot(ballAxis, rotationAxis), -1, 1);
+            float angle = Mathf.Acos(dot) * Mathf.Rad2Deg;
+            float maxAngle = ballAlignmentSpeed * distance;
+
+            Quaternion newAlignment = Quaternion.FromToRotation(ballAxis, rotationAxis) * rotation;
+            if (angle < maxAngle)
+            {
+                return newAlignment;
             }
             else 
             {
-                rightAxis = Vector3.right;
-                forwardAxis = Vector3.forward;
+                return Quaternion.SlerpUnclamped(rotation, newAlignment, maxAngle / angle);
             }
         }
 
@@ -161,6 +232,7 @@ namespace Rolling
             {
                 velocity += gravity * Time.deltaTime;
             }
+
             body.velocity = velocity;
             ClearState();
         }
@@ -357,20 +429,19 @@ namespace Rolling
             zAxis = ProjectOnPlane(zAxis, contactNormal);
 
             Vector3 relativeVelocity = velocity - connectionVelocity;
-            float currentX = Vector3.Dot(relativeVelocity, xAxis);
-            float currentZ = Vector3.Dot(relativeVelocity, zAxis);
 
-            float maxSpeedChange = acceleration * Time.deltaTime;
-            float newX = Mathf.MoveTowards(currentX, playerInput.x * speed, maxSpeedChange);
-            float newZ = Mathf.MoveTowards(currentZ, playerInput.y * speed, maxSpeedChange);
+            Vector3 adjustMent;
+            adjustMent.x = playerInput.x * speed - Vector3.Dot(relativeVelocity, xAxis);
+            adjustMent.y = Swimming ? playerInput.y * speed - Vector3.Dot(relativeVelocity, upAxis) : 0;
+            adjustMent.z = playerInput.z * speed - Vector3.Dot(relativeVelocity, zAxis);
 
-            velocity += (newX - currentX) * xAxis + (newZ - currentZ) * zAxis;
+            adjustMent = Vector3.ClampMagnitude(adjustMent, acceleration * Time.deltaTime);
+
+            velocity += adjustMent.x * xAxis + adjustMent.z * zAxis;
 
             if (Swimming)
             {
-                float currentY = Vector3.Dot(relativeVelocity, upAxis);
-                float newY = Mathf.MoveTowards(currentY, playerInput.z * speed, maxSpeedChange);
-                velocity += (newY - currentY) * upAxis;
+                velocity += adjustMent.y * upAxis;
             }
         }
 
@@ -381,17 +452,21 @@ namespace Rolling
 
         void ClearState()
         {
+            lastContactNormal = contactNormal;
             groundedContactCount = 0;
             contactNormal = Vector3.zero;
 
+            lastSteepNormal = steepNormal;
             steepContactCount = 0;
             steepNormal = Vector3.zero;
 
             climbContactCount = 0;
             climbNormal = Vector3.zero;
 
+            lastConnectionVelocity = connectionVelocity;
             previousConnectedBody = connectedBody;
             connectedBody = null;
+            connectionVelocity = Vector3.zero;
 
             submerge = 0;
         }

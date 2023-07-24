@@ -10119,6 +10119,36 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 974438163015175286, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 974438163015175286, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 974438163015175286, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 974438163015175286, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 974438163015175286, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 974438163015175286, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 270
+      objectReference: {fileID: 0}
     - target: {fileID: 3572642490193477561, guid: 6da0b812c794d7f47936ea7bb945a155,
         type: 3}
       propertyPath: m_RootOrder
@@ -10194,7 +10224,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: Sphere
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8407521029626079727, guid: 6da0b812c794d7f47936ea7bb945a155, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 6da0b812c794d7f47936ea7bb945a155, type: 3}
 --- !u!4 &679578986 stripped
 Transform:
@@ -13270,14 +13301,14 @@ MonoBehaviour:
   distance: 5
   focusRadius: 1
   focusCentering: 0.5
-  rotationSpeed: 360
+  rotationSpeed: 90
   alignSmoothRange: 45
-  delayTime: 5
+  alignDelay: 5
   minVerticalAngle: -20
   maxVerticalAngle: 70
-  probeMask:
+  obstructionMask:
     serializedVersion: 2
-    m_Bits: 7219
+    m_Bits: 3123
   upAlignmentSpeed: 360
 --- !u!43 &967529708
 Mesh:

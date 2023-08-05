@@ -53,6 +53,15 @@ namespace Rolling
         [SerializeField, Min(0)]
         float ballAlignmentSpeed = 180f;
 
+        [SerializeField, Range(0, 10)]
+        float chargeLength = 3f;
+
+        [SerializeField, Range(0, 500)]
+        float chargeSpeed = 100f;
+
+        [SerializeField, Range(0, 5f)]
+        float radius = 0.5f;
+
         bool OnGround => groundedContactCount > 0;
         int groundedContactCount;
         Vector3 contactNormal;
@@ -84,6 +93,11 @@ namespace Rolling
         int jumpPhase;
 
         bool desiresClimbing;
+
+        bool desireCharging;
+        bool charging;
+        float currentChargeLength;
+        Vector3 chargingDir;
 
         float minGroundDotProduct;
         float minStairsDotProduct;
@@ -119,6 +133,8 @@ namespace Rolling
                 desireJump |= Input.GetButtonDown("Jump");
                 desiresClimbing = Input.GetButton("Climb");
             }
+
+            desireCharging |= Input.GetButtonDown("Charge");
 
             playerInput = Vector3.ClampMagnitude(playerInput, 1);
 
@@ -214,6 +230,17 @@ namespace Rolling
             {
                 desireJump = false;
                 Jump(gravity);
+            }
+
+
+            if (!charging && desireCharging)
+            {
+                StartCharging();
+            }
+
+            if (charging)
+            {
+                Charging();
             }
 
             if (Climbing)
@@ -316,6 +343,45 @@ namespace Rolling
             }
 
             return false;
+        }
+
+        void StartCharging()
+        {
+            desireCharging = false;
+            charging = true;
+            body.isKinematic = true;
+
+            chargingDir = ProjectOnPlane(forwardAxis, contactNormal);
+        }
+
+        void Charging()
+        {
+            Vector3 movement = chargingDir * chargeSpeed * Time.deltaTime;
+            float distance = movement.magnitude;
+
+            // 检测撞墙
+            // 减去0.05的原因是当物体正好贴墙时，会导致检测失败
+            if (Physics.SphereCast(body.position - 0.05f * chargingDir, radius, chargingDir, out var hit, distance))
+            {
+                body.position += (hit.distance - 0.05f) * chargingDir;
+                EndCharging();
+                return ;
+            }
+
+            body.position += movement;
+            currentChargeLength += movement.magnitude;
+
+            if (currentChargeLength >= chargeLength)
+            {
+                EndCharging();
+            }
+        }
+
+        void EndCharging()
+        {
+            charging = false;
+            currentChargeLength = 0;
+            body.isKinematic = false;
         }
 
         void Jump(Vector3 gravity)
@@ -577,8 +643,8 @@ namespace Rolling
 			Gizmos.DrawLine(Vector3.zero, rightAxis);
 			Gizmos.color = Color.yellow;
 			Gizmos.DrawLine(Vector3.zero, forwardAxis);
-			Gizmos.color = Color.cyan;
-			Gizmos.DrawLine(Vector3.zero, upAxis);
+			// Gizmos.color = Color.cyan;
+			// Gizmos.DrawLine(Vector3.zero, upAxis);
 		}
     }
 }

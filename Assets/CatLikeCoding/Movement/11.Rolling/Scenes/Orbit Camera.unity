@@ -10204,11 +10204,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5901829111984194797, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: m_IsKinematic
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6227841742152740365, guid: 6da0b812c794d7f47936ea7bb945a155,
         type: 3}
       propertyPath: inputSpace
       value: 
       objectReference: {fileID: 963194228}
+    - target: {fileID: 6227841742152740365, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: chargeSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6227841742152740365, guid: 6da0b812c794d7f47936ea7bb945a155,
+        type: 3}
+      propertyPath: chargeLength
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 6227841742152740365, guid: 6da0b812c794d7f47936ea7bb945a155,
         type: 3}
       propertyPath: maxClimbSpeed

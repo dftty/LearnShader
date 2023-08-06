@@ -61,6 +61,31 @@ namespace BlendingCellColors
             cell.transform.position = pos;
             cell.coordinates = HexCoordinates.FromOffsetCoordinates(x, z);
 
+            if (x > 0)
+            {
+                cell.SetNeighbor(HexDirection.W, cells[i - 1]);
+            }
+
+            if (z > 0)
+            {
+                if ((z & 1) == 0)
+                {
+                    cell.SetNeighbor(HexDirection.SE, cells[i - width]);
+                    if (x > 0)
+                    {
+                        cell.SetNeighbor(HexDirection.SW, cells[i - width - 1]);
+                    }
+                }
+                else 
+                {
+                    cell.SetNeighbor(HexDirection.SW, cells[i - width]);
+                    if (x < width - 1)
+                    {
+                        cell.SetNeighbor(HexDirection.SE, cells[i - width + 1]);
+                    }                    
+                }
+            }
+
             Text label = Instantiate<Text>(cellLabelPrefab);
             label.rectTransform.SetParent(gridCanvas.transform, false);
             label.rectTransform.anchoredPosition = new Vector2(pos.x, pos.z);

@@ -67,7 +67,7 @@ namespace OribitCamera
             playerInput.x = Input.GetAxis("Horizontal");
             playerInput.y = Input.GetAxis("Vertical");
 
-            desireJump |= Input.GetButtonDown("Jump");
+            // desireJump |= Input.GetButtonDown("Jump");
 
             playerInput = Vector2.ClampMagnitude(playerInput, 1);
 

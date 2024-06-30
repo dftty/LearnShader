@@ -60,7 +60,7 @@ namespace Rolling
         float chargeSpeed = 100f;
 
         [SerializeField, Range(0, 5f)]
-        float radius = 0.5f;
+        public float radius = 0.5f;
 
         bool OnGround => groundedContactCount > 0;
         int groundedContactCount;
@@ -130,7 +130,7 @@ namespace Rolling
             }
             else 
             {
-                desireJump |= Input.GetButtonDown("Jump");
+                // desireJump |= Input.GetButtonDown("Jump");
                 desiresClimbing = Input.GetButton("Climb");
             }
 

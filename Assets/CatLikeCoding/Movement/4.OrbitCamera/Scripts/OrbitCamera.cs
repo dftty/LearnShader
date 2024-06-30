@@ -36,6 +36,8 @@ namespace OribitCamera
         float lastManualRotationTime;
         Camera regularCamera;
 
+        bool follow = false;
+
         Vector3 CameraHalfExtends 
         {
             get
@@ -66,6 +68,16 @@ namespace OribitCamera
         // Update is called once per frame
         void LateUpdate()
         {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                follow = !follow;
+            }
+
+            if (!follow)
+            {
+                return;
+            }
+
             UpdateFocusPoint();
             Quaternion lookRotation;
             if (ManualRotation() || AutomaticRotation())

@@ -22,8 +22,10 @@ Shader "Unlit/First Lighting Shader New UnityBRDF_5"
 			// 为了在 vertex函数中直接计算光照，需要进行以下定义，仅可用于点光光源
 			#pragma multi_compile _ VERTEXLIGHT_ON
 
-			#pragma vertex vert      		// 顶点着色器
-			#pragma fragment frag			// 片段着色器
+			#pragma vertex MyVertexProgram      		// 顶点着色器
+			#pragma fragment MyFragmentProgram			// 片段着色器
+
+            #define FORWARD_BASE_PASS
 
 			//#include "UnityCG.cginc"					// 包含一些通用方法
 			//#include "UnityStandardBRDF.cginc"			// 这个文件中已经包含UnityCG.cginc
@@ -47,8 +49,8 @@ Shader "Unlit/First Lighting Shader New UnityBRDF_5"
             CGPROGRAM
             
             #pragma target 3.0
-            #pragma vertex vert
-            #pragma fragment frag
+            #pragma vertex MyVertexProgram
+            #pragma fragment MyFragmentProgram
 
             #pragma multi_compile_fwdadd
 

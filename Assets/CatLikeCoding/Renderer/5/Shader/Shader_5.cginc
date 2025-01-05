@@ -16,6 +16,10 @@ struct VertexData{
 	float4 position : POSITION;
 	float3 normal : NORMAL;
 	float2 uv : TEXCOORD0;
+
+	#if defined(VERTEXLIGHT_ON)
+		float3 vertexLightColor : TEXCOORD1;
+	#endif
 };
 
 // 定义一个结构体
@@ -26,6 +30,23 @@ struct Interpolators{
 	float3 worldPos : TEXCOORD2;	// 物体世界坐标
 };
 
+void ComputeVertexLightColor(inout Interpolators i) {
+	#if defined(VERTEXLIGHT_ON)
+
+	#endif
+}
+
+UnityIndirect CreateIndirectLight(Interpolators i){
+	UnityIndirect indirectLight;
+	indirectLight.diffuse = 0;
+	indirectLight.specular = 0;
+
+	#if defined(VERTEXLIGHT_ON)
+		indirectLight.diffuse += i.vertexLightColor;
+	#endif
+
+	return indirectLight;
+}
 
 Interpolators MyVertexProgram(VertexData v){
 	Interpolators i;
@@ -62,9 +83,9 @@ float4 MyFragmentProgram(Interpolators i) : SV_TARGET{
 	float oneMinusReflectivity;
 	albedo = DiffuseAndSpecularFromMetallic(albedo, _Metallic, specularTint, oneMinusReflectivity);
 	
-	UnityIndirect indirectLight;
-	indirectLight.diffuse = 0;
-	indirectLight.specular = 0;
+	// UnityIndirect indirectLight;
+	// indirectLight.diffuse = 0;
+	// indirectLight.specular = 0;
 	
 	//float3 diffuse = albedo * lightColor * DotClamped(lightDir, i.normal); // DotClamped 方法返回点积，并且保证不会为负
 	//float3 reflectionDir = reflect(-lightDir, i.normal);
@@ -75,7 +96,7 @@ float4 MyFragmentProgram(Interpolators i) : SV_TARGET{
 		albedo, specularTint,
 		oneMinusReflectivity, _Smoothness,
 		i.normal, viewDir,
-		CreateLight(i), indirectLight
+		CreateLight(i), CreateIndirectLight(i)
 	);  // pos(x, y) return x^y
 }
 

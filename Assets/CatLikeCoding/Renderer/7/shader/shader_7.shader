@@ -1,4 +1,4 @@
-﻿Shader "Unlit/First Lighting Shader_6"
+﻿Shader "Unlit/First Lighting Shader_7"
 {
 	// 在开头添加属性
 	Properties{
@@ -35,6 +35,8 @@
 			#pragma vertex MyVertexProgram      		// 顶点着色器
 			#pragma fragment MyFragmentProgram			// 片段着色器
 
+			#define FORWARD_BASE_PASS
+
 			//#include "UnityCG.cginc"					// 包含一些通用方法
 			//#include "UnityStandardBRDF.cginc"			// 这个文件中已经包含UnityCG.cginc
 			#include "Shader_7.cginc"
@@ -58,7 +60,7 @@
 
 			// 这行代码表示，这个pass即为directional光编译，也为point光编译， 在Shader_5.cginc的代码中，进行判断即可
 			//#pragma multi_compile DIRECTIONAL POINT SPOT
-			#pragma multi_compile_fwdadd
+			// 额外编译阴影
 			#pragma multi_compile_fwdadd_fullshadows
 
 			#pragma vertex MyVertexProgram
@@ -78,13 +80,16 @@
 			}
 
 			CGPROGRAM
-			
+
 			#pragma target 3.0
+
+			#pragma multi_compile_shadowcaster
+
 			#pragma vertex MyShadowVertexProgram
 			#pragma fragment MyShadowFragmentProgram
 
 			#include "Shadow_7.cginc"
-			
+
 			ENDCG
 		}
 	}

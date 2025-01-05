@@ -1,158 +1,159 @@
-﻿#if !defined(MY_LIGHTING_INCLUDED)
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+#if !defined(MY_LIGHTING_INCLUDED)
 #define MY_LIGHTING_INCLUDED
-//#include "UnityCG.cginc"					// 包含一些通用方法
-//#include "UnityStandardBRDF.cginc"			// 这个文件中已经包含UnityCG.cginc
-#include "AutoLight.cginc"
+
 #include "UnityPBSLighting.cginc"
+#include "AutoLight.cginc"
 
-// 使用属性需要名称和属性定义中相同
 float4 _Tint;
-sampler2D _MainTex;
-float4 _MainTex_ST;
-float _Smoothness; 							// 光滑度
-float _Metallic;
-sampler2D _NormalMap;
-float _BumpScale;
-sampler2D _DetailTex;
-float4 _DetailTex_ST;
-sampler2D _DetailMap;
+sampler2D _MainTex, _DetailTex;
+float4 _MainTex_ST, _DetailTex_ST;
 
-struct VertexData{
+sampler2D _NormalMap, _DetailNormalMap;
+float _BumpScale, _DetailBumpScale;
+
+float _Metallic;
+float _Smoothness;
+
+struct VertexData {
 	float4 vertex : POSITION;
 	float3 normal : NORMAL;
 	float4 tangent : TANGENT;
-	float4 uv : TEXCOORD0;
+	float2 uv : TEXCOORD0;
 };
 
-// 定义一个结构体
-struct Interpolators{
-	float4 pos : SV_POSITION;  // 冒号后面代表语义
-	float4 uv : TEXCOORD0;			// uv坐标
-	float3 normal : TEXCOORD1;		// 法线
-	float3 worldPos : TEXCOORD2;	// 物体世界坐标
-	float3 tangent : TEXCOORD3;		// 切线
-	float3 binormal : TEXCOORD4;	// 副切线
+struct Interpolators {
+	float4 pos : SV_POSITION;
+	float4 uv : TEXCOORD0;
+	float3 normal : TEXCOORD1;
 
-	// #if defined(SHADOWS_SCREEN)
-	// 	float4 shadowCoordinates : TEXCOORD5;
-	// #endif
+	#if defined(BINORMAL_PER_FRAGMENT)
+		float4 tangent : TEXCOORD2;
+	#else
+		float3 tangent : TEXCOORD2;
+		float3 binormal : TEXCOORD3;
+	#endif
+
+	float3 worldPos : TEXCOORD4;
+
 	SHADOW_COORDS(5)
+
 	#if defined(VERTEXLIGHT_ON)
 		float3 vertexLightColor : TEXCOORD6;
 	#endif
 };
 
-float3 normalFromColor(float4 colorVal){
-	#if defined(UNITY_NO_DXT5mn)
-		return colorVal * 2 - 1;
-	#else 
-		// R => x => A
-		// G => y
-		// B =? z => ignored
-		float3 normalVal;
-		normalVal = float3(colorVal.a * 2.0 - 1,
-							colorVal.g * 2.0 - 1.0,
-							0.0 );
-		normalVal.z = sqrt(1.0 - dot(normalVal, normalVal));
-		return normalVal;
-	#endif
-}
-
-// 单独计算光照函数     需要输入和输出，因此用 inout
-void ComputeVertexLightColor(inout Interpolators i){
+void ComputeVertexLightColor (inout Interpolators i) {
 	#if defined(VERTEXLIGHT_ON)
-		i.vertexLightColor = unity_LightColor[0].rgb;
+		i.vertexLightColor = Shade4PointLights(
+			unity_4LightPosX0, unity_4LightPosY0, unity_4LightPosZ0,
+			unity_LightColor[0].rgb, unity_LightColor[1].rgb,
+			unity_LightColor[2].rgb, unity_LightColor[3].rgb,
+			unity_4LightAtten0, i.worldPos, i.normal
+		);
 	#endif
 }
 
-Interpolators MyVertexProgram(VertexData v){
+float3 CreateBinormal (float3 normal, float3 tangent, float binormalSign) {
+	return cross(normal, tangent.xyz) *
+		(binormalSign * unity_WorldTransformParams.w);
+}
+
+Interpolators MyVertexProgram (VertexData v) {
 	Interpolators i;
 	i.pos = UnityObjectToClipPos(v.vertex);
+	i.worldPos = mul(unity_ObjectToWorld, v.vertex);
+	i.normal = UnityObjectToWorldNormal(v.normal);
+
+	#if defined(BINORMAL_PER_FRAGMENT)
+		i.tangent = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
+	#else
+		i.tangent = UnityObjectToWorldDir(v.tangent.xyz);
+		i.binormal = CreateBinormal(i.normal, i.tangent, v.tangent.w);
+	#endif
+
 	i.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
 	i.uv.zw = TRANSFORM_TEX(v.uv, _DetailTex);
-	i.worldPos = mul(unity_ObjectToWorld, v.vertex);
-
-	// 将对象法线从对象空间转换到世界空间中
-	i.normal = UnityObjectToWorldNormal(v.normal);
-	// 计算完成后需要归一化
-	i.normal = normalize(i.normal);
-	i.tangent = UnityObjectToWorldDir(v.tangent.xyz);
-	i.binormal = cross(i.normal, i.tangent) * v.tangent.w;
-	// i.normal = mul((float3x3)unity_WorldToObject, v.normal);
-	// i.tangent = mul((float3x3)unity_WorldToObject, v.tangent.xyz);
 
 	TRANSFER_SHADOW(i);
+
 	ComputeVertexLightColor(i);
 	return i;
 }
 
-UnityLight CreateLight(Interpolators i){
+UnityLight CreateLight (Interpolators i) {
 	UnityLight light;
-	#if defined(POINT) || defined(SPOT) || defined(POINT_COOKIE)
+
+	#if defined(POINT) || defined(POINT_COOKIE) || defined(SPOT)
 		light.dir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
 	#else
 		light.dir = _WorldSpaceLightPos0.xyz;
 	#endif
+
 	UNITY_LIGHT_ATTENUATION(attenuation, i, i.worldPos);
+
 	light.color = _LightColor0.rgb * attenuation;
 	light.ndotl = DotClamped(i.normal, light.dir);
 	return light;
 }
 
-UnityIndirect CreateIndirectLight(Interpolators i){
+UnityIndirect CreateIndirectLight (Interpolators i) {
 	UnityIndirect indirectLight;
 	indirectLight.diffuse = 0;
 	indirectLight.specular = 0;
 
 	#if defined(VERTEXLIGHT_ON)
 		indirectLight.diffuse = i.vertexLightColor;
-	#endif 
+	#endif
+
+	#if defined(FORWARD_BASE_PASS)
+		indirectLight.diffuse += max(0, ShadeSH9(float4(i.normal, 1)));
+	#endif
+
 	return indirectLight;
 }
 
-float4 MyFragmentProgram(Interpolators i) : SV_TARGET{
-	// // 注意tex2D仅可以在像素着色器中使用
-	// // https://learn.microsoft.com/zh-cn/windows/win32/direct3dhlsl/dx-graphics-hlsl-tex2d
-	// float3 normalAtPixed = normalFromColor(tex2D(_NormalMap, i.uv));
-	float3 mainNormal = UnpackScaleNormal(tex2D(_NormalMap, i.uv.xy), _BumpScale);
-	float3 detailNormal = UnpackScaleNormal(tex2D(_DetailMap, i.uv.zw), _BumpScale);
-	float3 blendNormal = BlendNormals(mainNormal, detailNormal);
-	// blendNormal = blendNormal.xzy;
+void InitializeFragmentNormal(inout Interpolators i) {
+	float3 mainNormal =
+		UnpackScaleNormal(tex2D(_NormalMap, i.uv.xy), _BumpScale);
+	float3 detailNormal =
+		UnpackScaleNormal(tex2D(_DetailNormalMap, i.uv.zw), _DetailBumpScale);
+	float3 tangentSpaceNormal = BlendNormals(mainNormal, detailNormal);
 
-	float3x3 tangentToWorld = float3x3(i.tangent, i.binormal, i.normal);
-	// 注意矩阵乘法的顺序
-	i.normal = normalize(mul(blendNormal, tangentToWorld));
-	// 上述代码等价于
-	// i.normal = normalize(float3(
-	// 	blendNormal.x * i.tangent +
-	// 	blendNormal.y * i.binormal + 
-	// 	blendNormal.z * i.normal
-	// ));
+	#if defined(BINORMAL_PER_FRAGMENT)
+		float3 binormal = CreateBinormal(i.normal, i.tangent.xyz, i.tangent.w);
+	#else
+		float3 binormal = i.binormal;
+	#endif
+	
+	i.normal = normalize(
+		tangentSpaceNormal.x * i.tangent +
+		tangentSpaceNormal.y * binormal +
+		tangentSpaceNormal.z * i.normal
+	);
+}
 
-	// 摄像机坐标
+float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
+	InitializeFragmentNormal(i);
+
 	float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+
 	float3 albedo = tex2D(_MainTex, i.uv.xy).rgb * _Tint.rgb;
 	albedo *= tex2D(_DetailTex, i.uv.zw) * unity_ColorSpaceDouble;
 
 	float3 specularTint;
 	float oneMinusReflectivity;
-	albedo = DiffuseAndSpecularFromMetallic(albedo, _Metallic, specularTint, oneMinusReflectivity);
-	
-	//UnityIndirect indirectLight;
-	//indirectLight.diffuse = 0;
-	//indirectLight.specular = 0;
-	
-	//float3 diffuse = albedo * lightColor * DotClamped(lightDir, i.normal); // DotClamped 方法返回点积，并且保证不会为负
-	//float3 reflectionDir = reflect(-lightDir, i.normal);
-	//float3 halfVector = normalize(lightDir + viewDir);
-	//float3 specular = _SpecularTint.rgb * lightColor * pow(DotClamped(halfVector, i.normal), _Smoothness * 100);
+	albedo = DiffuseAndSpecularFromMetallic(
+		albedo, _Metallic, specularTint, oneMinusReflectivity
+	);
 
 	return UNITY_BRDF_PBS(
 		albedo, specularTint,
 		oneMinusReflectivity, _Smoothness,
 		i.normal, viewDir,
 		CreateLight(i), CreateIndirectLight(i)
-	);  // pos(x, y) return x^y
+	);
 }
 
 #endif

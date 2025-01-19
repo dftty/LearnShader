@@ -20,6 +20,7 @@ float3 normalFromColor(float4 colorVal){
 float3 WorldNormalFromNormalMap(sampler2D normalMap, float2 normalTexCoord,float3 tangentWorld, float3 binormalWorld, float3 normalWorld){
     // Color at Pixel which we read from Tangent space normal map
     float4 colorAtPixel = tex2D(normalMap, normalTexCoord);
+    // return colorAtPixel.xyz;
     // Normal value converted from Color value
     fixed3 normalAtPixed = normalFromColor(colorAtPixel);
     // Compose TBN matrix

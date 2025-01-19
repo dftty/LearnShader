@@ -43,20 +43,20 @@ Shader "ShaderDev/0011NormalMap_v2"{
 				float4 vertex : POSITION;
 				float4 normal : NORMAL;
 				float4 texcoord : TEXCOORD0;
-				#if _USENORMAL_ON
+				// #if _USENORMAL_ON
 					float4 tangent : TANGENT;
-				#endif
+				// #endif
 			};
 
 			struct VertexOutput{
 				float4 pos : SV_POSITION;
 				float4 texcoord : TEXCOORD0;
 				float4 normalWorld : TEXCOORD1;
-				#if _USENORMAL_ON
+				// #if _USENORMAL_ON
 					float4 tangentWorld : TEXCOORD2;
 					float3 binormalWorld : TEXCOORD3;
-					float4 normalTexcoord: TEXCOORD4;
-				#endif
+					float4 normalTexCoord: TEXCOORD4;
+				// #endif
 			};
 			
 
@@ -68,27 +68,27 @@ Shader "ShaderDev/0011NormalMap_v2"{
 				
 				// 法线世界坐标
 				o.normalWorld = normalize(mul(v.normal, unity_WorldToObject));
-				#if _USENORMAL_ON
-					o.normalTexcoord.xy = (v.texcoord.xy * _NormalMap_ST.xy + _NormalMap_ST.zw);
+				// #if _USENORMAL_ON
+					o.normalTexCoord.xy = (v.texcoord.xy);
 					// 切线世界坐标
 					o.tangentWorld = normalize(mul(v.tangent, unity_ObjectToWorld));
 					o.binormalWorld = normalize(cross(o.normalWorld, o.tangentWorld) * v.tangent.w);
-				#endif
+				// #endif
 				return o;
 			}
 
 
 
 			half4 frag(VertexOutput i) : COLOR{
-				#if _USENORMAL_ON
-					float3 worldNormalAtPixel = WorldNormalFromNormalMap(_NormalMap, i.normalTexCoord.xy, i.tangentWorld.xyz, i.binormalWorld.xyz, i.normalWorld.xyz);
+				// #if _USENORMAL_ON
+				float3 worldNormalAtPixel = WorldNormalFromNormalMap(_NormalMap, i.normalTexCoord.xy, i.tangentWorld.xyz, i.binormalWorld.xyz, i.normalWorld.xyz);
 
 					return float4(worldNormalAtPixel, 1);
-					//return tex2D(_MainTex, i.texcoord) * _Color;
-				#else
+					// return tex2D(_MainTex, i.texcoord) * _Color;
+				// #else
 
-					return float4(i.normalWorld.xyz, 1);
-				#endif
+				// 	return float4(i.normalWorld.xyz, 1);
+				// #endif
 			}
 
 

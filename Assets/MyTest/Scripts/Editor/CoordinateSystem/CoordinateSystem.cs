@@ -36,10 +36,13 @@ public class CoordinateSystem : EditorWindow
 
     private void OnGUI()
     {
-        DrawAxis();
-        DrawGrid();
+        Debug.Log("OnGUI");
+        Debug.Log("current event type: " + Event.current.type);
 
-        DrawCurve();
+        // DrawAxis();
+        // DrawGrid();
+
+        // DrawCurve();
     }
 
     private void DrawAxis() 

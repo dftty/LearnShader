@@ -1,4 +1,8 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+﻿// Upgrade NOTE: replaced 'UNITY_PASS_TEXCUBE(unity_SpecCube1)' with 'UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1,unity_SpecCube0)'
+
+// Upgrade NOTE: replaced 'UNITY_PASS_TEXCUBE(unity_SpecCube1)' with 'UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1,unity_SpecCube0)'
+
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
 #if !defined(MY_LIGHTING_INCLUDED)
 #define MY_LIGHTING_INCLUDED
@@ -98,11 +102,9 @@ UnityLight CreateLight (Interpolators i) {
 	return light;
 }
 
-float3 BoxProjection (
-	float3 direction, float3 position,
-	float4 cubemapPosition, float3 boxMin, float3 boxMax
-) {
+float3 BoxProjection(float3 direction, float3 position, float4 cubemapPosition, float3 boxMin, float3 boxMax) {
 	#if UNITY_SPECCUBE_BOX_PROJECTION
+		// cubemapPosition.w大于0时表示使用了box projection
 		UNITY_BRANCH
 		if (cubemapPosition.w > 0) {
 			float3 factors =
@@ -125,33 +127,35 @@ UnityIndirect CreateIndirectLight (Interpolators i, float3 viewDir) {
 
 	#if defined(FORWARD_BASE_PASS)
 		indirectLight.diffuse += max(0, ShadeSH9(float4(i.normal, 1)));
+		// reflect(入射光线, 法线) = 反射光线
 		float3 reflectionDir = reflect(-viewDir, i.normal);
+		// 从天空球CubeMap中采样反射光线的颜色
+		// float4 envSample = UNITY_SAMPLE_TEXCUBE(unity_SpecCube0, reflectionDir);
+
 		Unity_GlossyEnvironmentData envData;
 		envData.roughness = 1 - _Smoothness;
-		envData.reflUVW = BoxProjection(
-			reflectionDir, i.worldPos,
-			unity_SpecCube0_ProbePosition,
-			unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax
-		);
+		// envData.reflUVW = reflectionDir;
+		envData.reflUVW = BoxProjection(reflectionDir, i.worldPos, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax);	
 		float3 probe0 = Unity_GlossyEnvironment(
 			UNITY_PASS_TEXCUBE(unity_SpecCube0), unity_SpecCube0_HDR, envData
 		);
-		envData.reflUVW = BoxProjection(
-			reflectionDir, i.worldPos,
-			unity_SpecCube1_ProbePosition,
-			unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax
-		);
+
+		// two reflection probe blend
 		#if UNITY_SPECCUBE_BLENDING
 			float interpolator = unity_SpecCube0_BoxMin.w;
+
 			UNITY_BRANCH
-			if (interpolator < 0.99999) {
+			if (interpolator < 0.99999)
+			{
+				envData.reflUVW = BoxProjection(reflectionDir, i.worldPos,
+					unity_SpecCube1_ProbePosition, unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax);
 				float3 probe1 = Unity_GlossyEnvironment(
-					UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1, unity_SpecCube0),
-					unity_SpecCube0_HDR, envData
+					UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1,unity_SpecCube0), unity_SpecCube0_HDR, envData
 				);
 				indirectLight.specular = lerp(probe1, probe0, interpolator);
 			}
-			else {
+			else 
+			{
 				indirectLight.specular = probe0;
 			}
 		#else

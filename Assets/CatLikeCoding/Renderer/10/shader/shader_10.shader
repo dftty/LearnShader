@@ -1,4 +1,4 @@
-﻿Shader "Unlit/First Lighting Shader_9"
+﻿Shader "Unlit/First Lighting Shader_10"
 {
 	// 在开头添加属性
 	Properties{
@@ -12,6 +12,10 @@
 		[Gamma]_Metallic ("Metallic", Range(0, 1)) = 0
 		_Smoothness ("Smoothness", Range(0, 1)) = 0.5
 
+		[NoScaleOffset] _OcclusionMap ("Occlusion", 2D) = "white" {}
+		_OcclusionStrength("Occlusion Strength", Range(0, 1)) = 1
+
+		[NoScaleOffset] _DetailMask ("Detail Mask", 2D) = "white" {}
 		_DetailTex("Detail", 2D) = "gray" {}
 		[NoScaleOffset]_DetailNormalMap("Detail Normal", 2D) = "bump" {}
 		_DetailBumpScale("Detail Bump Scale", Float) = 1
@@ -41,7 +45,12 @@
 			#pragma multi_compile _ SHADOWS_SCREEN
 			#pragma shader_feature _METALLIC_MAP
 			#pragma shader_feature _ _SMOOTHNESS_ALBEDO _SMOOTHNESS_METALLIC
-			#pragma shader_feature _ _EMISSION_MAP
+			#pragma shader_feature _NORMAL_MAP
+			#pragma shader_feature _EMISSION_MAP
+			#pragma shader_feature _OCCLUSION_MAP
+			#pragma shader_feature _DETAIL_MASK
+			#pragma shader_feature _DETAIL_ALBEDO_MAP
+			#pragma shader_feature _DETAIL_NORMAL_MAP
 
 			#pragma vertex MyVertexProgram      		// 顶点着色器
 			#pragma fragment MyFragmentProgram			// 片段着色器
@@ -50,7 +59,7 @@
 
 			//#include "UnityCG.cginc"					// 包含一些通用方法
 			//#include "UnityStandardBRDF.cginc"			// 这个文件中已经包含UnityCG.cginc
-			#include "Shader_9.cginc"
+			#include "Shader_10.cginc"
 
 			// 表示结束
 			ENDCG
@@ -75,12 +84,16 @@
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma shader_feature _METALLIC_MAP
 			#pragma shader_feature _ _SMOOTHNESS_ALBEDO _SMOOTHNESS_METALLIC
+			#pragma shader_feature _NORMAL_MAP
+			#pragma shader_feature _DETAIL_MASK
+			#pragma shader_feature _DETAIL_ALBEDO_MAP
+			#pragma shader_feature _DETAIL_NORMAL_MAP
 
 			#pragma vertex MyVertexProgram
 			#pragma fragment MyFragmentProgram
 
 			//#define POINT
-			#include "Shader_9.cginc"
+			#include "Shader_10.cginc"
 			
 
 			ENDCG
@@ -101,7 +114,7 @@
 			#pragma vertex MyShadowVertexProgram
 			#pragma fragment MyShadowFragmentProgram
 
-			#include "Shadow_9.cginc"
+			#include "Shadow_10.cginc"
 
 			ENDCG
 		}

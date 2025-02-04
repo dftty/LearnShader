@@ -70,14 +70,45 @@ namespace Renderer
             DoMetallic();
             DoSmoothness();
             DoNormals();
+            DoOcclusion();
             DoEmission();
+            DoDetailMask();
             editor.TextureScaleOffsetProperty(mainTex);
+        }
+
+        void DoOcclusion () {
+            MaterialProperty map = FindProperty("_OcclusionMap");
+            Texture tex = map.textureValue;
+            EditorGUI.BeginChangeCheck();
+            editor.TexturePropertySingleLine(
+                MakeLabel(map, "Occlusion (G)"), map,
+                tex ? FindProperty("_OcclusionStrength") : null
+            );
+            if (EditorGUI.EndChangeCheck() && tex != map.textureValue) {
+                SetKeyword("_OCCLUSION_MAP", map.textureValue);
+            }
+        }
+
+        void DoDetailMask () {
+            MaterialProperty mask = FindProperty("_DetailMask");
+            EditorGUI.BeginChangeCheck();
+            editor.TexturePropertySingleLine(
+                MakeLabel(mask, "Detail Mask (A)"), mask
+            );
+            if (EditorGUI.EndChangeCheck()) {
+                SetKeyword("_DETAIL_MASK", mask.textureValue);
+            }
         }
 
         private void DoNormals()
         {
             MaterialProperty map = FindProperty("_NormalMap");
+            EditorGUI.BeginChangeCheck();
             editor.TexturePropertySingleLine(MakeLabel(map, "Normal Map"), map, map.textureValue ? FindProperty("_BumpScale") : null);
+
+            if (EditorGUI.EndChangeCheck()) {
+			    SetKeyword("_NORMAL_MAP", map.textureValue);
+            }
         }
 
 
